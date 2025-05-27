@@ -1,1 +1,27 @@
+
 project_id = "mojdxzjlkarilaqdetvt"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54322
+external_url = "http://localhost:54321"
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+secure_password_change_enabled = true
+enable_signup = true
+
+[functions.ai-financial-advisor]
+verify_jwt = true
+
+[functions.whatsapp-qr]
+verify_jwt = true
+
+[functions.whatsapp-disconnect]
+verify_jwt = true
