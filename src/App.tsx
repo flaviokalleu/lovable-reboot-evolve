@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +13,8 @@ import WhatsApp from "./pages/WhatsApp";
 import Budgets from "./pages/Budgets";
 import Reports from "./pages/Reports";
 import Admin from "./pages/Admin";
+import Settings from "./pages/Settings";
+import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
 import WhatsAppAdmin from "./pages/WhatsAppAdmin";
 
@@ -34,6 +37,8 @@ const App = () => (
             <Route path="/budgets" element={<Budgets />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/payment" element={<Payment />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
