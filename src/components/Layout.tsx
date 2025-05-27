@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   ];
 
   if (isAdmin) {
-    navigation.push({ name: 'Admin', href: '/admin', icon: Settings });
+    navigation.push(
+      { name: 'Config WhatsApp', href: '/whatsapp-admin', icon: Settings },
+      { name: 'Admin', href: '/admin', icon: Settings }
+    );
   }
 
   return (

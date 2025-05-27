@@ -19,35 +19,50 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const { message, from, type, mediaUrl } = await req.json();
-    console.log('Recebida mensagem WhatsApp:', { message, from, type });
+    const { message, from, type, mediaUrl, timestamp } = await req.json();
+    console.log('Mensagem WhatsApp recebida:', { message, from, type, timestamp });
 
-    // Encontrar usuário pelo número do WhatsApp
-    const { data: profile, error: profileError } = await supabaseClient
+    // Verificar se o WhatsApp está conectado
+    const { data: config } = await supabaseClient
+      .from('whatsapp_config')
+      .select('*')
+      .eq('is_connected', true)
+      .single();
+
+    if (!config) {
+      console.log('WhatsApp não está conectado');
+      return new Response(
+        JSON.stringify({ error: 'WhatsApp não conectado' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Procurar usuário pelo número do WhatsApp ou criar um registro temporário
+    let userId = null;
+    const { data: profile } = await supabaseClient
       .from('profiles')
       .select('*')
       .eq('whatsapp_number', from)
       .single();
 
-    if (profileError || !profile) {
-      console.log('Usuário não encontrado para o número:', from);
-      return new Response(
-        JSON.stringify({ error: 'Usuário não encontrado' }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    if (profile) {
+      userId = profile.id;
+    } else {
+      // Criar registro temporário para usuário não cadastrado
+      console.log('Usuário não encontrado, criando registro temporário');
     }
 
     // Salvar mensagem no banco
     const { data: savedMessage, error: messageError } = await supabaseClient
       .from('whatsapp_messages')
       .insert([{
-        user_id: profile.id,
+        user_id: userId,
         user_phone: from,
         message_content: message,
-        message_type: type,
+        message_type: type || 'text',
         media_url: mediaUrl,
         processed: false
       }])
@@ -65,26 +80,33 @@ serve(async (req) => {
     let aiResponse = '';
     let extractedData = null;
 
-    // Contexto para IA sobre extração de dados financeiros
-    const financialPrompt = `Você é um assistente financeiro especializado em extrair dados de transações de mensagens do WhatsApp.
+    // Prompt melhorado para análise financeira
+    const financialPrompt = `Você é um assistente financeiro IA especializado em extrair dados de transações de mensagens do WhatsApp.
 
-Analise a seguinte mensagem e extraia informações financeiras se houver:
+Analise a seguinte mensagem e determine se contém informações financeiras:
 "${message}"
 
-Se for uma transação financeira, responda no formato JSON:
+Se for uma transação financeira, responda APENAS com um JSON válido no formato:
 {
   "isTransaction": true,
   "type": "income" ou "expense",
   "amount": valor_numerico,
   "category": "food|transport|entertainment|health|education|shopping|bills|salary|investment|other",
-  "description": "descrição_da_transação"
+  "description": "descrição_clara_da_transação"
 }
 
-Se não for uma transação, responda com uma mensagem útil sobre finanças pessoais e inclua:
+Se NÃO for uma transação financeira, responda com um JSON no formato:
 {
   "isTransaction": false,
-  "response": "sua_resposta_helpful"
-}`;
+  "response": "resposta_útil_sobre_finanças_pessoais"
+}
+
+Exemplos de transações:
+- "Gasto R$ 50 com almoço" = {"isTransaction": true, "type": "expense", "amount": 50, "category": "food", "description": "Almoço"}
+- "Recebi R$ 2000 salário" = {"isTransaction": true, "type": "income", "amount": 2000, "category": "salary", "description": "Salário"}
+- "Paguei R$ 120 conta de luz" = {"isTransaction": true, "type": "expense", "amount": 120, "category": "bills", "description": "Conta de luz"}
+
+IMPORTANTE: Responda APENAS com JSON válido, sem texto adicional.`;
 
     try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
@@ -105,14 +127,18 @@ Se não for uma transação, responda com uma mensagem útil sobre finanças pes
       const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       
       try {
-        extractedData = JSON.parse(aiText);
+        // Limpar resposta para extrair apenas o JSON
+        const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+        const jsonText = jsonMatch ? jsonMatch[0] : aiText;
         
-        if (extractedData.isTransaction) {
-          // Salvar transação extraída
+        extractedData = JSON.parse(jsonText);
+        
+        if (extractedData.isTransaction && userId) {
+          // Salvar transação extraída apenas se o usuário estiver cadastrado
           const { error: transactionError } = await supabaseClient
             .from('transactions')
             .insert([{
-              user_id: profile.id,
+              user_id: userId,
               amount: extractedData.amount,
               type: extractedData.type,
               category: extractedData.category,
@@ -121,18 +147,24 @@ Se não for uma transação, responda com uma mensagem útil sobre finanças pes
               whatsapp_message_id: savedMessage.id
             }]);
 
-          if (transactionError) throw transactionError;
-          
-          aiResponse = `✅ Transação registrada!\n\nTipo: ${extractedData.type === 'income' ? 'Receita' : 'Despesa'}\nValor: R$ ${extractedData.amount.toFixed(2)}\nCategoria: ${extractedData.category}\nDescrição: ${extractedData.description}`;
+          if (transactionError) {
+            console.error('Erro ao salvar transação:', transactionError);
+            aiResponse = `❌ Erro ao registrar transação: ${transactionError.message}`;
+          } else {
+            aiResponse = `✅ *Transação registrada com sucesso!*\n\n💰 *Valor:* R$ ${extractedData.amount.toFixed(2)}\n📊 *Tipo:* ${extractedData.type === 'income' ? 'Receita' : 'Despesa'}\n🏷️ *Categoria:* ${getCategoryName(extractedData.category)}\n📝 *Descrição:* ${extractedData.description}\n\n_Transação processada automaticamente pela IA._`;
+          }
+        } else if (extractedData.isTransaction && !userId) {
+          aiResponse = `🤖 *Transação identificada!*\n\nPara registrar automaticamente suas transações, você precisa se cadastrar no sistema com este número de WhatsApp.\n\n💰 *Transação detectada:*\n- Valor: R$ ${extractedData.amount.toFixed(2)}\n- Tipo: ${extractedData.type === 'income' ? 'Receita' : 'Despesa'}\n- Categoria: ${getCategoryName(extractedData.category)}`;
         } else {
-          aiResponse = extractedData.response || 'Mensagem recebida, mas não identifiquei uma transação financeira.';
+          aiResponse = extractedData.response || 'Olá! Sou seu assistente financeiro. Para registrar transações, envie mensagens como:\n\n• "Gasto R$ 50 com almoço"\n• "Recebi R$ 2000 salário"\n• "Paguei R$ 120 conta de luz"';
         }
       } catch (parseError) {
-        aiResponse = aiText || 'Desculpe, não consegui processar sua mensagem adequadamente.';
+        console.error('Erro ao fazer parse do JSON:', parseError);
+        aiResponse = 'Olá! Sou seu assistente financeiro. Para registrar transações, envie mensagens como:\n\n• "Gasto R$ 50 com almoço"\n• "Recebi R$ 2000 salário"\n• "Paguei R$ 120 conta de luz"';
       }
     } catch (aiError) {
       console.error('Erro ao processar com Gemini:', aiError);
-      aiResponse = 'Mensagem recebida! Para registrar uma transação, envie: "Gasto R$ 50 com almoço" ou "Recebi R$ 2000 salário".';
+      aiResponse = 'Olá! Sou seu assistente financeiro. No momento estou com dificuldades para processar sua mensagem. Tente novamente em instantes.';
     }
 
     // Atualizar mensagem com resposta da IA
@@ -144,11 +176,18 @@ Se não for uma transação, responda com uma mensagem útil sobre finanças pes
       })
       .eq('id', savedMessage.id);
 
+    // Enviar resposta de volta via WhatsApp (simulado)
+    console.log(`Enviando resposta para ${from}:`, aiResponse);
+    
+    // Aqui você enviaria a resposta via Baileys
+    // await sendWhatsAppMessage(from, aiResponse);
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         response: aiResponse,
-        transactionCreated: extractedData?.isTransaction || false
+        transactionCreated: extractedData?.isTransaction && userId ? true : false,
+        userRegistered: userId ? true : false
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -166,3 +205,20 @@ Se não for uma transação, responda com uma mensagem útil sobre finanças pes
     );
   }
 });
+
+function getCategoryName(category: string): string {
+  const categories: Record<string, string> = {
+    food: 'Alimentação',
+    transport: 'Transporte',
+    entertainment: 'Entretenimento',
+    health: 'Saúde',
+    education: 'Educação',
+    shopping: 'Compras',
+    bills: 'Contas',
+    salary: 'Salário',
+    investment: 'Investimento',
+    other: 'Outros',
+  };
+  
+  return categories[category] || category;
+}
