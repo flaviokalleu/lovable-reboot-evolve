@@ -17,6 +17,8 @@ import Settings from "./pages/Settings";
 import Payment from "./pages/Payment";
 import NotFound from "./pages/NotFound";
 import WhatsAppAdmin from "./pages/WhatsAppAdmin";
+import CRM from "./pages/CRM";
+import Kanban from "./pages/Kanban";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +38,8 @@ const App = () => (
             <Route path="/whatsapp-admin" element={<WhatsAppAdmin />} />
             <Route path="/budgets" element={<Budgets />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/crm" element={<CRM />} />
+            <Route path="/kanban" element={<Kanban />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/payment" element={<Payment />} />

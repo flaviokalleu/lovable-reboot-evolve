@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, Settings, DollarSign, CreditCard, BarChart3, MessageSquare, PieChart, Calendar } from 'lucide-react';
+import { LogOut, User, Settings, DollarSign, CreditCard, BarChart3, MessageSquare, PieChart, Calendar, Users, Kanban } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -25,6 +25,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Transações', href: '/transactions', icon: DollarSign },
     { name: 'Orçamentos', href: '/budgets', icon: PieChart },
     { name: 'Relatórios', href: '/reports', icon: Calendar },
+    { name: 'CRM', href: '/crm', icon: Users },
+    { name: 'Kanban', href: '/kanban', icon: Kanban },
     { name: 'WhatsApp & IA', href: '/whatsapp', icon: MessageSquare },
     { name: 'Assinatura', href: '/payment', icon: CreditCard },
   ];
