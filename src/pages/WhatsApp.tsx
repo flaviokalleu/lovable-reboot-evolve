@@ -3,7 +3,8 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
-import WhatsAppQR from '@/components/WhatsAppQR';
+import WhatsAppConnection from '@/components/WhatsAppConnection';
+import WhatsAppMessages from '@/components/WhatsAppMessages';
 import AIInsights from '@/components/AIInsights';
 
 const WhatsApp = () => {
@@ -30,9 +31,11 @@ const WhatsApp = () => {
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <WhatsAppQR />
+          <WhatsAppConnection />
           <AIInsights />
         </div>
+        
+        <WhatsAppMessages />
       </div>
     </Layout>
   );

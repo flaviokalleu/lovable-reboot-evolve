@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { PiggyBank, Plus, Trash2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import type { Database } from '@/integrations/supabase/types';
+
+type TransactionCategory = Database['public']['Enums']['transaction_category'];
 
 const BudgetManager = () => {
   const { user } = useAuth();
@@ -17,12 +20,12 @@ const BudgetManager = () => {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    category: 'food',
+    category: 'food' as TransactionCategory,
     amount: '',
     period: 'monthly',
   });
 
-  const categories = {
+  const categories: Record<TransactionCategory, string> = {
     food: 'Alimentação',
     transport: 'Transporte',
     entertainment: 'Entretenimento',
@@ -30,6 +33,8 @@ const BudgetManager = () => {
     education: 'Educação',
     shopping: 'Compras',
     bills: 'Contas',
+    salary: 'Salário',
+    investment: 'Investimento',
     other: 'Outros',
   };
 
@@ -60,39 +65,32 @@ const BudgetManager = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user || !formData.amount) return;
 
     setIsLoading(true);
     try {
-      const startDate = new Date();
-      const endDate = new Date();
-      
-      if (formData.period === 'monthly') {
-        endDate.setMonth(endDate.getMonth() + 1);
-      } else if (formData.period === 'weekly') {
-        endDate.setDate(endDate.getDate() + 7);
-      } else {
-        endDate.setFullYear(endDate.getFullYear() + 1);
-      }
+      const now = new Date();
+      const startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      const budgetData = {
+        user_id: user.id,
+        category: formData.category,
+        amount: Number(formData.amount),
+        period: formData.period,
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+      };
 
       const { error } = await supabase
         .from('budgets')
-        .insert([
-          {
-            user_id: user.id,
-            category: formData.category,
-            amount: parseFloat(formData.amount),
-            period: formData.period,
-            start_date: startDate.toISOString().split('T')[0],
-            end_date: endDate.toISOString().split('T')[0],
-          },
-        ]);
+        .insert([budgetData]);
 
       if (error) throw error;
 
       toast({
         title: 'Orçamento criado!',
-        description: 'Seu orçamento foi configurado com sucesso.',
+        description: 'Orçamento adicionado com sucesso.',
       });
 
       setFormData({ category: 'food', amount: '', period: 'monthly' });
@@ -118,14 +116,14 @@ const BudgetManager = () => {
       if (error) throw error;
 
       toast({
-        title: 'Orçamento removido',
-        description: 'O orçamento foi excluído com sucesso.',
+        title: 'Orçamento excluído',
+        description: 'Orçamento removido com sucesso.',
       });
-
+      
       loadBudgets();
     } catch (error: any) {
       toast({
-        title: 'Erro ao remover orçamento',
+        title: 'Erro ao excluir orçamento',
         description: error.message,
         variant: 'destructive',
       });
@@ -137,56 +135,63 @@ const BudgetManager = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5" />
-            Novo Orçamento
+            <PiggyBank className="h-5 w-5" />
+            Criar Orçamento
           </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="category">Categoria</Label>
-                <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value: TransactionCategory) => 
+                    setFormData({ ...formData, category: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(categories).map(([key, label]) => (
-                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                      <SelectItem key={key} value={key}>
+                        {label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="amount">Valor Limite</Label>
+              <div>
+                <Label htmlFor="amount">Valor (R$)</Label>
                 <Input
                   id="amount"
                   type="number"
-                  step="0.01"
-                  placeholder="0,00"
                   value={formData.amount}
                   onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                  required
+                  placeholder="0,00"
+                  step="0.01"
                 />
               </div>
-
-              <div className="space-y-2">
+              <div>
                 <Label htmlFor="period">Período</Label>
-                <Select value={formData.period} onValueChange={(value) => setFormData({ ...formData, period: value })}>
+                <Select
+                  value={formData.period}
+                  onValueChange={(value) => setFormData({ ...formData, period: value })}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="weekly">Semanal</SelectItem>
                     <SelectItem value="monthly">Mensal</SelectItem>
+                    <SelectItem value="weekly">Semanal</SelectItem>
                     <SelectItem value="yearly">Anual</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
-
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading} className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
               {isLoading ? 'Criando...' : 'Criar Orçamento'}
             </Button>
           </form>
@@ -196,37 +201,33 @@ const BudgetManager = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {budgets.map((budget) => (
           <Card key={budget.id}>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <PiggyBank className="h-4 w-4" />
-                  {categories[budget.category as keyof typeof categories]}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => deleteBudget(budget.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <h3 className="font-semibold">{categories[budget.category as TransactionCategory]}</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => deleteBudget(budget.id)}
+                className="text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>Limite:</span>
                   <span className="font-medium">
-                    R$ {parseFloat(budget.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {Number(budget.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Período:</span>
-                  <span className="capitalize">{budget.period}</span>
+                  <span>{budget.period === 'monthly' ? 'Mensal' : budget.period === 'weekly' ? 'Semanal' : 'Anual'}</span>
                 </div>
-                <Progress value={0} className="mt-2" />
-                <p className="text-xs text-gray-500 text-center">
-                  Gasto atual: R$ 0,00
-                </p>
+                <Progress value={75} className="mt-2" />
+                <div className="text-xs text-gray-500">
+                  75% utilizado
+                </div>
               </div>
             </CardContent>
           </Card>
