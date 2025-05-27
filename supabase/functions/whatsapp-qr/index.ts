@@ -25,9 +25,14 @@ serve(async (req) => {
       throw new Error('Token de autorização necessário');
     }
 
-    const { data: { user } } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabaseClient.auth.getUser(token);
+    
     if (!user) throw new Error('Usuário não autenticado');
 
+    console.log('Usuario autenticado:', user.id);
+
+    // Verificar se é admin
     const { data: profile } = await supabaseClient
       .from('profiles')
       .select('role')
@@ -38,19 +43,25 @@ serve(async (req) => {
       throw new Error('Apenas administradores podem gerenciar WhatsApp');
     }
 
-    // Iniciar WhatsApp usando Baileys (simulado)
-    console.log('Iniciando WhatsApp com Baileys...');
-    
+    console.log('Admin verificado, gerando QR Code...');
+
     // Gerar QR Code para autenticação
     const sessionId = `whatsapp-session-${Date.now()}`;
-    const qrCodeData = `https://wa.me/qr/${sessionId}`;
+    const qrCodeData = `https://wa.me/qr/${sessionId}-${Math.random().toString(36).substring(7)}`;
     const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrCodeData)}`;
 
-    // Salvar configuração no banco
-    const { error } = await supabaseClient
+    console.log('QR Code gerado:', qrCodeUrl);
+
+    // Limpar configurações anteriores
+    await supabaseClient
       .from('whatsapp_config')
-      .upsert([{
-        id: crypto.randomUUID(),
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
+
+    // Salvar nova configuração no banco
+    const { data, error } = await supabaseClient
+      .from('whatsapp_config')
+      .insert([{
         qr_code: qrCodeUrl,
         session_id: sessionId,
         is_connected: false,
@@ -58,15 +69,24 @@ serve(async (req) => {
         session_data: { sessionId, qrData: qrCodeData },
         last_connected_at: null,
         updated_at: new Date().toISOString()
-      }]);
+      }])
+      .select()
+      .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao salvar configuração:', error);
+      throw error;
+    }
 
-    // Simular processo de autenticação (em produção, isso seria feito pelo Baileys)
+    console.log('Configuração salva:', data);
+
+    // Simular processo de autenticação (em 15 segundos)
     setTimeout(async () => {
       try {
-        const phoneNumber = '+5511999999999'; // Número simulado
-        await supabaseClient
+        const phoneNumber = '+5511999887766'; // Número simulado para teste
+        console.log('Simulando conexão do WhatsApp...');
+        
+        const { error: updateError } = await supabaseClient
           .from('whatsapp_config')
           .update({
             is_connected: true,
@@ -76,20 +96,25 @@ serve(async (req) => {
           })
           .eq('session_id', sessionId);
 
-        console.log(`WhatsApp conectado com número: ${phoneNumber}`);
-        
-        // Iniciar webhook listener (simulado)
-        startWebhookListener(supabaseClient, phoneNumber);
+        if (updateError) {
+          console.error('Erro ao atualizar status:', updateError);
+        } else {
+          console.log(`WhatsApp conectado com número: ${phoneNumber}`);
+          
+          // Iniciar listener de mensagens simulado
+          startMessageListener(supabaseClient, phoneNumber);
+        }
       } catch (error) {
         console.error('Erro ao conectar WhatsApp:', error);
       }
-    }, 30000); // 30 segundos para simular escaneamento do QR
+    }, 15000); // 15 segundos para simular escaneamento do QR
 
     return new Response(
       JSON.stringify({ 
+        success: true,
         qrCode: qrCodeUrl,
         sessionId: sessionId,
-        message: 'QR Code gerado. Escaneie com seu WhatsApp.'
+        message: 'QR Code gerado com sucesso. Escaneie com seu WhatsApp em 15 segundos.'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -109,20 +134,34 @@ serve(async (req) => {
 });
 
 // Função para simular o listener de mensagens do WhatsApp
-async function startWebhookListener(supabaseClient: any, phoneNumber: string) {
+async function startMessageListener(supabaseClient: any, phoneNumber: string) {
   console.log(`Iniciando listener para ${phoneNumber}`);
   
-  // Em produção, aqui você configuraria o Baileys para escutar mensagens
-  // Simulação de mensagens recebidas
-  setInterval(async () => {
-    // Simular mensagem recebida (apenas para teste)
-    const mockMessage = {
+  // Simular mensagem de teste após conectar
+  setTimeout(async () => {
+    const testMessage = {
       from: '+5511888888888',
-      message: 'Gasto R$ 25 com lanche',
+      message: 'Gasto R$ 35 com almoço no restaurante',
       timestamp: new Date().toISOString()
     };
     
-    console.log('Mensagem simulada recebida:', mockMessage);
-    // Processar mensagem seria feito aqui
-  }, 60000); // A cada minuto para teste
+    console.log('Simulando mensagem recebida:', testMessage);
+    
+    // Processar mensagem via webhook
+    try {
+      const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+        },
+        body: JSON.stringify(testMessage)
+      });
+      
+      const result = await response.json();
+      console.log('Resposta do webhook:', result);
+    } catch (error) {
+      console.error('Erro ao chamar webhook:', error);
+    }
+  }, 5000); // 5 segundos após conectar
 }

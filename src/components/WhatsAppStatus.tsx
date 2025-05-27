@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Activity, Users, MessageCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Activity, Users, MessageCircle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 const WhatsAppStatus = () => {
   const [status, setStatus] = useState<any>(null);
@@ -19,6 +19,7 @@ const WhatsAppStatus = () => {
     // Verificar status a cada 30 segundos
     const interval = setInterval(() => {
       loadStatus();
+      loadStats();
     }, 30000);
 
     return () => clearInterval(interval);
@@ -29,13 +30,17 @@ const WhatsAppStatus = () => {
       const { data, error } = await supabase
         .from('whatsapp_config')
         .select('*')
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
       if (data) {
         setStatus(data);
+      } else {
+        setStatus(null);
       }
     } catch (error) {
-      console.log('No WhatsApp config found');
+      console.error('Erro ao carregar status:', error);
     } finally {
       setIsLoading(false);
     }
@@ -60,9 +65,17 @@ const WhatsAppStatus = () => {
 
       const uniqueUserCount = new Set(uniqueUsers?.map(u => u.user_phone)).size;
 
+      // Contar transações criadas via WhatsApp
+      const { count: transactionCount } = await supabase
+        .from('transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('processed_by_ai', true)
+        .gte('created_at', sevenDaysAgo.toISOString());
+
       setStats({
         messagesLast7Days: messageCount || 0,
         activeUsers: uniqueUserCount,
+        aiTransactions: transactionCount || 0,
       });
     } catch (error) {
       console.error('Erro ao carregar estatísticas:', error);
@@ -80,7 +93,11 @@ const WhatsAppStatus = () => {
         description: 'O serviço do WhatsApp foi reiniciado.',
       });
       
-      loadStatus();
+      // Recarregar status após reiniciar
+      setTimeout(() => {
+        loadStatus();
+        loadStats();
+      }, 2000);
     } catch (error: any) {
       toast({
         title: 'Erro ao reiniciar',
@@ -88,6 +105,15 @@ const WhatsAppStatus = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  const refreshData = () => {
+    loadStatus();
+    loadStats();
+    toast({
+      title: 'Dados atualizados',
+      description: 'Status e estatísticas foram recarregados.',
+    });
   };
 
   if (isLoading) {
@@ -114,7 +140,7 @@ const WhatsAppStatus = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div className="text-center p-4 bg-blue-50 rounded-lg">
             <MessageCircle className="h-8 w-8 text-blue-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-blue-900">{stats?.messagesLast7Days || 0}</p>
@@ -126,24 +152,52 @@ const WhatsAppStatus = () => {
             <p className="text-2xl font-bold text-green-900">{stats?.activeUsers || 0}</p>
             <p className="text-sm text-green-600">Usuários Ativos</p>
           </div>
+
+          <div className="text-center p-4 bg-purple-50 rounded-lg">
+            <Activity className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-purple-900">{stats?.aiTransactions || 0}</p>
+            <p className="text-sm text-purple-600">Transações IA</p>
+          </div>
         </div>
 
-        {status?.is_connected && (
+        {status ? (
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Último ping:</span>
-              <span className="text-gray-900">
-                {status.last_connected_at ? 
-                  new Date(status.last_connected_at).toLocaleString('pt-BR') : 
-                  'Nunca'
-                }
+              <span className="text-gray-600">Status:</span>
+              <span className={`font-medium ${status.is_connected ? 'text-green-600' : 'text-red-600'}`}>
+                {status.is_connected ? 'Conectado' : 'Desconectado'}
               </span>
             </div>
             
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Número conectado:</span>
-              <span className="text-gray-900">{status.phone_number || 'N/A'}</span>
-            </div>
+            {status.is_connected && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Número conectado:</span>
+                  <span className="text-gray-900">{status.phone_number || 'N/A'}</span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Última conexão:</span>
+                  <span className="text-gray-900">
+                    {status.last_connected_at ? 
+                      new Date(status.last_connected_at).toLocaleString('pt-BR') : 
+                      'Nunca'
+                    }
+                  </span>
+                </div>
+              </>
+            )}
+            
+            {status.session_id && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Session ID:</span>
+                <span className="text-gray-900 text-xs">{status.session_id.substring(0, 20)}...</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-gray-500">Nenhuma configuração encontrada</p>
           </div>
         )}
 
@@ -151,8 +205,9 @@ const WhatsAppStatus = () => {
           <Button onClick={restartWhatsApp} variant="outline" className="flex-1">
             Reiniciar Serviço
           </Button>
-          <Button onClick={loadStatus} variant="outline" className="flex-1">
-            Atualizar Status
+          <Button onClick={refreshData} variant="outline" className="flex-1">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Atualizar
           </Button>
         </div>
       </CardContent>

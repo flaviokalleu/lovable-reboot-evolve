@@ -19,7 +19,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const { message, from, type, mediaUrl, timestamp } = await req.json();
+    const { message, from, type = 'text', mediaUrl, timestamp } = await req.json();
     console.log('Mensagem WhatsApp recebida:', { message, from, type, timestamp });
 
     // Verificar se o WhatsApp está conectado
@@ -27,7 +27,7 @@ serve(async (req) => {
       .from('whatsapp_config')
       .select('*')
       .eq('is_connected', true)
-      .single();
+      .maybeSingle();
 
     if (!config) {
       console.log('WhatsApp não está conectado');
@@ -40,19 +40,19 @@ serve(async (req) => {
       );
     }
 
-    // Procurar usuário pelo número do WhatsApp ou criar um registro temporário
+    // Procurar usuário pelo número do WhatsApp
     let userId = null;
     const { data: profile } = await supabaseClient
       .from('profiles')
       .select('*')
       .eq('whatsapp_number', from)
-      .single();
+      .maybeSingle();
 
     if (profile) {
       userId = profile.id;
+      console.log('Usuário encontrado:', userId);
     } else {
-      // Criar registro temporário para usuário não cadastrado
-      console.log('Usuário não encontrado, criando registro temporário');
+      console.log('Usuário não encontrado para o número:', from);
     }
 
     // Salvar mensagem no banco
@@ -62,25 +62,30 @@ serve(async (req) => {
         user_id: userId,
         user_phone: from,
         message_content: message,
-        message_type: type || 'text',
+        message_type: type,
         media_url: mediaUrl,
         processed: false
       }])
       .select()
       .single();
 
-    if (messageError) throw messageError;
+    if (messageError) {
+      console.error('Erro ao salvar mensagem:', messageError);
+      throw messageError;
+    }
+
+    console.log('Mensagem salva:', savedMessage);
 
     // Processar mensagem com Gemini AI
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     if (!geminiApiKey) {
+      console.error('GEMINI_API_KEY não configurada');
       throw new Error('GEMINI_API_KEY não configurada');
     }
 
     let aiResponse = '';
     let extractedData = null;
 
-    // Prompt melhorado para análise financeira
     const financialPrompt = `Você é um assistente financeiro IA especializado em extrair dados de transações de mensagens do WhatsApp.
 
 Analise a seguinte mensagem e determine se contém informações financeiras:
@@ -109,6 +114,8 @@ Exemplos de transações:
 IMPORTANTE: Responda APENAS com JSON válido, sem texto adicional.`;
 
     try {
+      console.log('Processando com Gemini...');
+      
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`, {
         method: 'POST',
         headers: {
@@ -123,8 +130,15 @@ IMPORTANTE: Responda APENAS com JSON válido, sem texto adicional.`;
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+      }
+
       const data = await response.json();
+      console.log('Resposta do Gemini:', data);
+      
       const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      console.log('Texto da IA:', aiText);
       
       try {
         // Limpar resposta para extrair apenas o JSON
@@ -132,6 +146,7 @@ IMPORTANTE: Responda APENAS com JSON válido, sem texto adicional.`;
         const jsonText = jsonMatch ? jsonMatch[0] : aiText;
         
         extractedData = JSON.parse(jsonText);
+        console.log('Dados extraídos:', extractedData);
         
         if (extractedData.isTransaction && userId) {
           // Salvar transação extraída apenas se o usuário estiver cadastrado
@@ -152,23 +167,24 @@ IMPORTANTE: Responda APENAS com JSON válido, sem texto adicional.`;
             aiResponse = `❌ Erro ao registrar transação: ${transactionError.message}`;
           } else {
             aiResponse = `✅ *Transação registrada com sucesso!*\n\n💰 *Valor:* R$ ${extractedData.amount.toFixed(2)}\n📊 *Tipo:* ${extractedData.type === 'income' ? 'Receita' : 'Despesa'}\n🏷️ *Categoria:* ${getCategoryName(extractedData.category)}\n📝 *Descrição:* ${extractedData.description}\n\n_Transação processada automaticamente pela IA._`;
+            console.log('Transação salva com sucesso');
           }
         } else if (extractedData.isTransaction && !userId) {
           aiResponse = `🤖 *Transação identificada!*\n\nPara registrar automaticamente suas transações, você precisa se cadastrar no sistema com este número de WhatsApp.\n\n💰 *Transação detectada:*\n- Valor: R$ ${extractedData.amount.toFixed(2)}\n- Tipo: ${extractedData.type === 'income' ? 'Receita' : 'Despesa'}\n- Categoria: ${getCategoryName(extractedData.category)}`;
         } else {
-          aiResponse = extractedData.response || 'Olá! Sou seu assistente financeiro. Para registrar transações, envie mensagens como:\n\n• "Gasto R$ 50 com almoço"\n• "Recebi R$ 2000 salário"\n• "Paguei R$ 120 conta de luz"';
+          aiResponse = extractedData.response || '🤖 Olá! Sou seu assistente financeiro. Para registrar transações, envie mensagens como:\n\n• "Gasto R$ 50 com almoço"\n• "Recebi R$ 2000 salário"\n• "Paguei R$ 120 conta de luz"';
         }
       } catch (parseError) {
         console.error('Erro ao fazer parse do JSON:', parseError);
-        aiResponse = 'Olá! Sou seu assistente financeiro. Para registrar transações, envie mensagens como:\n\n• "Gasto R$ 50 com almoço"\n• "Recebi R$ 2000 salário"\n• "Paguei R$ 120 conta de luz"';
+        aiResponse = '🤖 Olá! Sou seu assistente financeiro. Para registrar transações, envie mensagens como:\n\n• "Gasto R$ 50 com almoço"\n• "Recebi R$ 2000 salário"\n• "Paguei R$ 120 conta de luz"';
       }
     } catch (aiError) {
       console.error('Erro ao processar com Gemini:', aiError);
-      aiResponse = 'Olá! Sou seu assistente financeiro. No momento estou com dificuldades para processar sua mensagem. Tente novamente em instantes.';
+      aiResponse = '🤖 Olá! Sou seu assistente financeiro. No momento estou com dificuldades para processar sua mensagem. Tente novamente em instantes.';
     }
 
     // Atualizar mensagem com resposta da IA
-    await supabaseClient
+    const { error: updateError } = await supabaseClient
       .from('whatsapp_messages')
       .update({
         ai_response: aiResponse,
@@ -176,11 +192,11 @@ IMPORTANTE: Responda APENAS com JSON válido, sem texto adicional.`;
       })
       .eq('id', savedMessage.id);
 
-    // Enviar resposta de volta via WhatsApp (simulado)
-    console.log(`Enviando resposta para ${from}:`, aiResponse);
-    
-    // Aqui você enviaria a resposta via Baileys
-    // await sendWhatsAppMessage(from, aiResponse);
+    if (updateError) {
+      console.error('Erro ao atualizar mensagem:', updateError);
+    }
+
+    console.log(`Resposta enviada para ${from}:`, aiResponse);
 
     return new Response(
       JSON.stringify({ 
