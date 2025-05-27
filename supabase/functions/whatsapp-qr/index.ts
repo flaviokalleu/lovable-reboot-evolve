@@ -60,10 +60,9 @@ serve(async (req) => {
       .delete()
       .neq('id', '00000000-0000-0000-0000-000000000000');
 
-    // Salvar nova configuração no banco
+    // Salvar nova configuração no banco usando apenas colunas existentes
     const configData = {
       qr_code: qrCodeUrl,
-      session_id: sessionId,
       is_connected: false,
       session_data: { 
         sessionId, 
@@ -88,7 +87,7 @@ serve(async (req) => {
 
     console.log('Configuração salva:', data);
 
-    // Simular processo de autenticação WPPConnect (em 20 segundos)
+    // Simular processo de autenticação WPPConnect (em 15 segundos)
     setTimeout(async () => {
       try {
         const phoneNumber = '+5511999887766'; // Número simulado para teste
@@ -110,7 +109,7 @@ serve(async (req) => {
         const { error: updateError } = await supabaseClient
           .from('whatsapp_config')
           .update(updateData)
-          .eq('session_id', sessionId);
+          .eq('id', data.id);
 
         if (updateError) {
           console.error('Erro ao atualizar status:', updateError);
@@ -123,7 +122,7 @@ serve(async (req) => {
       } catch (error) {
         console.error('Erro ao conectar WhatsApp:', error);
       }
-    }, 20000); // 20 segundos para simular escaneamento do QR
+    }, 15000); // 15 segundos para simular escaneamento do QR
 
     return new Response(
       JSON.stringify({ 
@@ -131,7 +130,7 @@ serve(async (req) => {
         qrCode: qrCodeUrl,
         sessionId: sessionId,
         apiType: 'wppconnect',
-        message: 'QR Code gerado com sucesso. Escaneie com seu WhatsApp em 20 segundos para conectar via WPPConnect.'
+        message: 'QR Code gerado com sucesso. Escaneie com seu WhatsApp em 15 segundos para conectar via WPPConnect.'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -195,6 +194,6 @@ async function startMessageListener(supabaseClient: any, phoneNumber: string) {
       } catch (error) {
         console.error('Erro ao chamar webhook para mensagem', i + 1, ':', error);
       }
-    }, (i + 1) * 7000); // Espaçar mensagens em 7 segundos
+    }, (i + 1) * 5000); // Espaçar mensagens em 5 segundos
   }
 }

@@ -38,23 +38,23 @@ serve(async (req) => {
       throw new Error('Apenas administradores podem reiniciar o WhatsApp');
     }
 
-    // Reiniciar conexão do WhatsApp
+    // Reiniciar conexão do WhatsApp - limpar todas as configurações
     const { error } = await supabaseClient
       .from('whatsapp_config')
-      .update({
-        is_connected: false,
-        last_connected_at: new Date().toISOString(),
-        session_data: null
-      });
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000');
 
-    if (error) throw error;
+    if (error) {
+      console.error('Erro ao limpar configurações:', error);
+      throw error;
+    }
 
-    console.log('WhatsApp reiniciado');
+    console.log('WhatsApp reiniciado - todas as configurações foram limpas');
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'WhatsApp foi reiniciado com sucesso'
+        message: 'WhatsApp foi reiniciado com sucesso. Todas as configurações foram removidas.'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
