@@ -11,7 +11,7 @@ const WhatsAppQR = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState<string | null>(null);
+  const [connectedPhone, setConnectedPhone] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -35,10 +35,14 @@ const WhatsAppQR = () => {
       if (data) {
         setIsConnected(data.is_connected || false);
         setQrCode(data.qr_code);
-        setPhoneNumber(data.phone_number);
+        
+        // Extrair número do telefone do session_data se disponível
+        const sessionData = data.session_data as any;
+        const phoneNumber = sessionData?.phone_number || null;
+        setConnectedPhone(phoneNumber);
         
         if (data.is_connected) {
-          setStatusMessage(`Conectado: ${data.phone_number}`);
+          setStatusMessage(`Conectado via WPPConnect: ${phoneNumber || 'N/A'}`);
         } else if (data.qr_code) {
           setStatusMessage('Aguardando escaneamento do QR Code...');
         } else {
@@ -47,7 +51,7 @@ const WhatsAppQR = () => {
       } else {
         setIsConnected(false);
         setQrCode(null);
-        setPhoneNumber(null);
+        setConnectedPhone(null);
         setStatusMessage('Nenhuma configuração encontrada');
       }
     } catch (error: any) {
@@ -58,7 +62,7 @@ const WhatsAppQR = () => {
 
   const generateQRCode = async () => {
     setIsLoading(true);
-    setStatusMessage('Gerando QR Code...');
+    setStatusMessage('Gerando QR Code via WPPConnect...');
     
     try {
       const { data, error } = await supabase.functions.invoke('whatsapp-qr');
@@ -73,8 +77,8 @@ const WhatsAppQR = () => {
         setStatusMessage('QR Code gerado! Escaneie com seu WhatsApp.');
         
         toast({
-          title: 'QR Code gerado!',
-          description: 'Escaneie o código com seu WhatsApp em 15 segundos.',
+          title: 'QR Code gerado via WPPConnect!',
+          description: 'Escaneie o código com seu WhatsApp em 20 segundos.',
         });
       } else {
         throw new Error(data?.error || 'Erro ao gerar QR Code');
@@ -101,7 +105,7 @@ const WhatsAppQR = () => {
       
       setIsConnected(false);
       setQrCode(null);
-      setPhoneNumber(null);
+      setConnectedPhone(null);
       setStatusMessage('Desconectado');
       
       toast({
@@ -125,7 +129,7 @@ const WhatsAppQR = () => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Smartphone className="h-5 w-5" />
-          WhatsApp Connection
+          WhatsApp Connection (WPPConnect)
           {isConnected ? (
             <CheckCircle className="h-5 w-5 text-green-600" />
           ) : (
@@ -139,9 +143,9 @@ const WhatsAppQR = () => {
           <div className="text-center space-y-4">
             <div className="p-4 bg-green-50 rounded-lg">
               <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-2" />
-              <p className="text-green-800 font-medium">WhatsApp Conectado!</p>
+              <p className="text-green-800 font-medium">WhatsApp Conectado via WPPConnect!</p>
               <p className="text-green-600 text-sm">
-                Número: {phoneNumber}
+                Número: {connectedPhone || 'Carregando...'}
               </p>
               <p className="text-green-600 text-sm mt-2">
                 Agora os usuários podem enviar mensagens para a IA
@@ -163,8 +167,8 @@ const WhatsAppQR = () => {
                 <div className="flex justify-center">
                   <img 
                     src={qrCode} 
-                    alt="QR Code WhatsApp" 
-                    className="max-w-64 max-h-64 border rounded-lg"
+                    alt="QR Code WhatsApp WPPConnect" 
+                    className="max-w-80 max-h-80 border rounded-lg shadow-lg"
                     onError={() => {
                       setStatusMessage('Erro ao carregar QR Code');
                       setQrCode(null);
@@ -178,7 +182,7 @@ const WhatsAppQR = () => {
                     Abra o WhatsApp → Menu (⋮) → Dispositivos conectados → Conectar dispositivo
                   </p>
                   <p className="text-blue-500 text-xs mt-2">
-                    Conexão automática em 15 segundos após escaneamento
+                    Conexão automática em 20 segundos via WPPConnect
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -196,7 +200,7 @@ const WhatsAppQR = () => {
                   <Smartphone className="h-12 w-12 text-gray-400 mx-auto mb-2" />
                   <p className="text-gray-600">WhatsApp não conectado</p>
                   <p className="text-gray-500 text-sm mt-2">
-                    Gere um QR Code para conectar o WhatsApp
+                    Gere um QR Code para conectar o WhatsApp via WPPConnect
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -205,7 +209,7 @@ const WhatsAppQR = () => {
                     disabled={isLoading}
                     className="flex-1"
                   >
-                    {isLoading ? 'Gerando QR Code...' : 'Conectar WhatsApp'}
+                    {isLoading ? 'Gerando QR Code...' : 'Conectar WhatsApp (WPPConnect)'}
                   </Button>
                   <Button onClick={checkConnectionStatus} variant="outline" size="icon">
                     <RefreshCw className="h-4 w-4" />

@@ -103,7 +103,7 @@ Se for uma transação financeira, responda APENAS com um JSON válido no format
 Se NÃO for uma transação financeira, responda com um JSON no formato:
 {
   "isTransaction": false,
-  "response": "resposta_útil_sobre_finanças_pessoais"
+  "response": "resposta_útil_sobre_finanças_pessoais_ou_cumprimento"
 }
 
 Exemplos de transações:
@@ -131,14 +131,20 @@ IMPORTANTE: Responda APENAS com JSON válido, sem texto adicional.`;
       });
 
       if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`Gemini API error: ${response.status} ${response.statusText}`, errorText);
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
       }
 
       const data = await response.json();
-      console.log('Resposta do Gemini:', data);
+      console.log('Resposta completa do Gemini:', JSON.stringify(data, null, 2));
       
       const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
       console.log('Texto da IA:', aiText);
+      
+      if (!aiText) {
+        throw new Error('Resposta vazia do Gemini');
+      }
       
       try {
         // Limpar resposta para extrair apenas o JSON
@@ -166,21 +172,58 @@ IMPORTANTE: Responda APENAS com JSON válido, sem texto adicional.`;
             console.error('Erro ao salvar transação:', transactionError);
             aiResponse = `❌ Erro ao registrar transação: ${transactionError.message}`;
           } else {
-            aiResponse = `✅ *Transação registrada com sucesso!*\n\n💰 *Valor:* R$ ${extractedData.amount.toFixed(2)}\n📊 *Tipo:* ${extractedData.type === 'income' ? 'Receita' : 'Despesa'}\n🏷️ *Categoria:* ${getCategoryName(extractedData.category)}\n📝 *Descrição:* ${extractedData.description}\n\n_Transação processada automaticamente pela IA._`;
+            aiResponse = `✅ *Transação registrada com sucesso!*
+
+💰 *Valor:* R$ ${extractedData.amount.toFixed(2)}
+📊 *Tipo:* ${extractedData.type === 'income' ? 'Receita' : 'Despesa'}
+🏷️ *Categoria:* ${getCategoryName(extractedData.category)}
+📝 *Descrição:* ${extractedData.description}
+
+_Transação processada automaticamente pela IA via WPPConnect._`;
             console.log('Transação salva com sucesso');
           }
         } else if (extractedData.isTransaction && !userId) {
-          aiResponse = `🤖 *Transação identificada!*\n\nPara registrar automaticamente suas transações, você precisa se cadastrar no sistema com este número de WhatsApp.\n\n💰 *Transação detectada:*\n- Valor: R$ ${extractedData.amount.toFixed(2)}\n- Tipo: ${extractedData.type === 'income' ? 'Receita' : 'Despesa'}\n- Categoria: ${getCategoryName(extractedData.category)}`;
+          aiResponse = `🤖 *Transação identificada!*
+
+Para registrar automaticamente suas transações, você precisa se cadastrar no sistema com este número de WhatsApp.
+
+💰 *Transação detectada:*
+- Valor: R$ ${extractedData.amount.toFixed(2)}
+- Tipo: ${extractedData.type === 'income' ? 'Receita' : 'Despesa'}
+- Categoria: ${getCategoryName(extractedData.category)}
+
+Entre em contato com o administrador para vincular seu número.`;
         } else {
-          aiResponse = extractedData.response || '🤖 Olá! Sou seu assistente financeiro. Para registrar transações, envie mensagens como:\n\n• "Gasto R$ 50 com almoço"\n• "Recebi R$ 2000 salário"\n• "Paguei R$ 120 conta de luz"';
+          aiResponse = extractedData.response || '🤖 Olá! Sou seu assistente financeiro via WhatsApp! 
+
+Para registrar transações, envie mensagens como:
+• "Gasto R$ 50 com almoço"
+• "Recebi R$ 2000 salário"  
+• "Paguei R$ 120 conta de luz"
+
+Posso ajudar com dúvidas sobre finanças pessoais também! 💰';
         }
       } catch (parseError) {
         console.error('Erro ao fazer parse do JSON:', parseError);
-        aiResponse = '🤖 Olá! Sou seu assistente financeiro. Para registrar transações, envie mensagens como:\n\n• "Gasto R$ 50 com almoço"\n• "Recebi R$ 2000 salário"\n• "Paguei R$ 120 conta de luz"';
+        console.error('Texto que causou erro:', aiText);
+        aiResponse = '🤖 Olá! Sou seu assistente financeiro via WhatsApp!
+
+Para registrar transações, envie mensagens como:
+• "Gasto R$ 50 com almoço"
+• "Recebi R$ 2000 salário"
+• "Paguei R$ 120 conta de luz"
+
+Posso ajudar com dúvidas sobre finanças pessoais também! 💰';
       }
     } catch (aiError) {
       console.error('Erro ao processar com Gemini:', aiError);
-      aiResponse = '🤖 Olá! Sou seu assistente financeiro. No momento estou com dificuldades para processar sua mensagem. Tente novamente em instantes.';
+      aiResponse = '🤖 Olá! Sou seu assistente financeiro via WhatsApp!
+
+No momento estou com dificuldades técnicas para processar sua mensagem. Tente novamente em alguns instantes.
+
+Para registrar transações, envie mensagens como:
+• "Gasto R$ 50 com almoço"
+• "Recebi R$ 2000 salário"';
     }
 
     // Atualizar mensagem com resposta da IA
@@ -203,7 +246,8 @@ IMPORTANTE: Responda APENAS com JSON válido, sem texto adicional.`;
         success: true, 
         response: aiResponse,
         transactionCreated: extractedData?.isTransaction && userId ? true : false,
-        userRegistered: userId ? true : false
+        userRegistered: userId ? true : false,
+        apiType: 'wppconnect'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

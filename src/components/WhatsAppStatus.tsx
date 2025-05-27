@@ -126,12 +126,17 @@ const WhatsAppStatus = () => {
     );
   }
 
+  // Extrair informações do session_data
+  const sessionData = status?.session_data as any;
+  const connectedPhone = sessionData?.phone_number || 'N/A';
+  const apiType = sessionData?.api_type || 'unknown';
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          Status do WhatsApp
+          Status do WhatsApp ({apiType.toUpperCase()})
           {status?.is_connected ? (
             <CheckCircle className="h-5 w-5 text-green-600" />
           ) : (
@@ -173,7 +178,12 @@ const WhatsAppStatus = () => {
               <>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Número conectado:</span>
-                  <span className="text-gray-900">{status.phone_number || 'N/A'}</span>
+                  <span className="text-gray-900">{connectedPhone}</span>
+                </div>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">API:</span>
+                  <span className="text-gray-900">{apiType.toUpperCase()}</span>
                 </div>
                 
                 <div className="flex justify-between text-sm">

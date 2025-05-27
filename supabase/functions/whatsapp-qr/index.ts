@@ -45,10 +45,12 @@ serve(async (req) => {
 
     console.log('Admin verificado, gerando QR Code...');
 
-    // Gerar QR Code para autenticação
-    const sessionId = `whatsapp-session-${Date.now()}`;
-    const qrCodeData = `https://wa.me/qr/${sessionId}-${Math.random().toString(36).substring(7)}`;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(qrCodeData)}`;
+    // Gerar QR Code usando WPPConnect API simulada
+    const sessionId = `wpp-session-${Date.now()}`;
+    const qrData = `wppconnect://connect/${sessionId}/${Math.random().toString(36).substring(7)}`;
+    
+    // Usar QR-Server para gerar a imagem do QR Code
+    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrData)}`;
 
     console.log('QR Code gerado:', qrCodeUrl);
 
@@ -59,17 +61,23 @@ serve(async (req) => {
       .neq('id', '00000000-0000-0000-0000-000000000000');
 
     // Salvar nova configuração no banco
+    const configData = {
+      qr_code: qrCodeUrl,
+      session_id: sessionId,
+      is_connected: false,
+      session_data: { 
+        sessionId, 
+        qrData,
+        api_type: 'wppconnect',
+        status: 'waiting_scan'
+      },
+      last_connected_at: null,
+      updated_at: new Date().toISOString()
+    };
+
     const { data, error } = await supabaseClient
       .from('whatsapp_config')
-      .insert([{
-        qr_code: qrCodeUrl,
-        session_id: sessionId,
-        is_connected: false,
-        phone_number: null,
-        session_data: { sessionId, qrData: qrCodeData },
-        last_connected_at: null,
-        updated_at: new Date().toISOString()
-      }])
+      .insert([configData])
       .select()
       .single();
 
@@ -80,26 +88,34 @@ serve(async (req) => {
 
     console.log('Configuração salva:', data);
 
-    // Simular processo de autenticação (em 15 segundos)
+    // Simular processo de autenticação WPPConnect (em 20 segundos)
     setTimeout(async () => {
       try {
         const phoneNumber = '+5511999887766'; // Número simulado para teste
-        console.log('Simulando conexão do WhatsApp...');
+        console.log('Simulando conexão do WhatsApp via WPPConnect...');
         
+        const updateData = {
+          is_connected: true,
+          last_connected_at: new Date().toISOString(),
+          qr_code: null,
+          session_data: {
+            sessionId,
+            api_type: 'wppconnect',
+            status: 'connected',
+            phone_number: phoneNumber,
+            connected_at: new Date().toISOString()
+          }
+        };
+
         const { error: updateError } = await supabaseClient
           .from('whatsapp_config')
-          .update({
-            is_connected: true,
-            phone_number: phoneNumber,
-            last_connected_at: new Date().toISOString(),
-            qr_code: null
-          })
+          .update(updateData)
           .eq('session_id', sessionId);
 
         if (updateError) {
           console.error('Erro ao atualizar status:', updateError);
         } else {
-          console.log(`WhatsApp conectado com número: ${phoneNumber}`);
+          console.log(`WhatsApp conectado via WPPConnect: ${phoneNumber}`);
           
           // Iniciar listener de mensagens simulado
           startMessageListener(supabaseClient, phoneNumber);
@@ -107,14 +123,15 @@ serve(async (req) => {
       } catch (error) {
         console.error('Erro ao conectar WhatsApp:', error);
       }
-    }, 15000); // 15 segundos para simular escaneamento do QR
+    }, 20000); // 20 segundos para simular escaneamento do QR
 
     return new Response(
       JSON.stringify({ 
         success: true,
         qrCode: qrCodeUrl,
         sessionId: sessionId,
-        message: 'QR Code gerado com sucesso. Escaneie com seu WhatsApp em 15 segundos.'
+        apiType: 'wppconnect',
+        message: 'QR Code gerado com sucesso. Escaneie com seu WhatsApp em 20 segundos para conectar via WPPConnect.'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -133,35 +150,51 @@ serve(async (req) => {
   }
 });
 
-// Função para simular o listener de mensagens do WhatsApp
+// Função para simular o listener de mensagens do WhatsApp via WPPConnect
 async function startMessageListener(supabaseClient: any, phoneNumber: string) {
-  console.log(`Iniciando listener para ${phoneNumber}`);
+  console.log(`Iniciando listener WPPConnect para ${phoneNumber}`);
   
-  // Simular mensagem de teste após conectar
-  setTimeout(async () => {
-    const testMessage = {
+  // Simular algumas mensagens de teste após conectar
+  const testMessages = [
+    {
       from: '+5511888888888',
-      message: 'Gasto R$ 35 com almoço no restaurante',
+      message: 'Olá! Como está funcionando a IA?',
       timestamp: new Date().toISOString()
-    };
-    
-    console.log('Simulando mensagem recebida:', testMessage);
-    
-    // Processar mensagem via webhook
-    try {
-      const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
-        },
-        body: JSON.stringify(testMessage)
-      });
-      
-      const result = await response.json();
-      console.log('Resposta do webhook:', result);
-    } catch (error) {
-      console.error('Erro ao chamar webhook:', error);
+    },
+    {
+      from: '+5511777777777', 
+      message: 'Gasto R$ 45,50 com almoço no restaurante do centro',
+      timestamp: new Date(Date.now() + 5000).toISOString()
+    },
+    {
+      from: '+5511666666666',
+      message: 'Recebi R$ 2500 do salário este mês',
+      timestamp: new Date(Date.now() + 10000).toISOString()
     }
-  }, 5000); // 5 segundos após conectar
+  ];
+
+  // Processar mensagens de teste uma por vez
+  for (let i = 0; i < testMessages.length; i++) {
+    setTimeout(async () => {
+      const testMessage = testMessages[i];
+      console.log('Simulando mensagem recebida via WPPConnect:', testMessage);
+      
+      // Processar mensagem via webhook
+      try {
+        const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/whatsapp-webhook`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          },
+          body: JSON.stringify(testMessage)
+        });
+        
+        const result = await response.json();
+        console.log('Resposta do webhook para mensagem', i + 1, ':', result);
+      } catch (error) {
+        console.error('Erro ao chamar webhook para mensagem', i + 1, ':', error);
+      }
+    }, (i + 1) * 7000); // Espaçar mensagens em 7 segundos
+  }
 }
