@@ -16,6 +16,7 @@ import { Users, Plus, Search, Phone, Mail, DollarSign, Calendar, Edit, Trash2 } 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import CRMStatusManager from '@/components/CRMStatusManager';
 
 const CRM = () => {
   const { user, loading } = useAuth();
@@ -30,9 +31,24 @@ const CRM = () => {
     email: '',
     phone: '',
     company: '',
-    status: 'lead',
+    status: '',
     value: 0,
     notes: ''
+  });
+
+  // Fetch custom statuses
+  const { data: customStatuses = [] } = useQuery({
+    queryKey: ['crm-status'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('crm_status')
+        .select('*')
+        .order('order_index');
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user
   });
 
   // Fetch clients
@@ -113,7 +129,7 @@ const CRM = () => {
       email: '',
       phone: '',
       company: '',
-      status: 'lead',
+      status: customStatuses[0]?.name || 'lead',
       value: 0,
       notes: ''
     });
@@ -140,9 +156,15 @@ const CRM = () => {
     setIsDialogOpen(true);
   };
 
+  useEffect(() => {
+    if (customStatuses.length > 0 && !formData.status) {
+      setFormData(prev => ({ ...prev, status: customStatuses[0].name }));
+    }
+  }, [customStatuses]);
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -153,12 +175,17 @@ const CRM = () => {
   }
 
   const getStatusColor = (status: string) => {
+    const customStatus = customStatuses.find(s => s.name === status);
+    if (customStatus) {
+      return { backgroundColor: customStatus.color, color: 'white' };
+    }
+    // Fallback colors
     switch (status) {
-      case 'ativo': return 'bg-green-100 text-green-800';
-      case 'lead': return 'bg-yellow-100 text-yellow-800';
-      case 'proposta': return 'bg-blue-100 text-blue-800';
-      case 'fechado': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'ativo': return { backgroundColor: '#10b981', color: 'white' };
+      case 'lead': return { backgroundColor: '#fbbf24', color: 'black' };
+      case 'proposta': return { backgroundColor: '#3b82f6', color: 'white' };
+      case 'fechado': return { backgroundColor: '#8b5cf6', color: 'white' };
+      default: return { backgroundColor: '#6b7280', color: 'white' };
     }
   };
 
@@ -175,240 +202,259 @@ const CRM = () => {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white">
-          <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-            <Users className="h-8 w-8" />
-            CRM - Gestão de Clientes
-          </h1>
-          <p className="text-purple-100">Gerencie seus contatos e relacionamentos comerciais</p>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-green-600 text-sm font-medium">Total Clientes</p>
-                  <p className="text-2xl font-bold text-green-800">{stats.total}</p>
-                </div>
-                <Users className="h-8 w-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-blue-600 text-sm font-medium">Leads Ativos</p>
-                  <p className="text-2xl font-bold text-blue-800">{stats.leads}</p>
-                </div>
-                <Phone className="h-8 w-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-r from-purple-50 to-violet-50 border-purple-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-purple-600 text-sm font-medium">Valor Pipeline</p>
-                  <p className="text-2xl font-bold text-purple-800">R$ {stats.pipeline.toLocaleString()}</p>
-                </div>
-                <DollarSign className="h-8 w-8 text-purple-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-r from-orange-50 to-red-50 border-orange-200">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-orange-600 text-sm font-medium">Clientes Ativos</p>
-                  <p className="text-2xl font-bold text-orange-800">{stats.ativos}</p>
-                </div>
-                <Calendar className="h-8 w-8 text-orange-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Actions Bar */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Buscar clientes..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+    <div className="min-h-screen bg-gray-900">
+      <Layout>
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white">
+            <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
+              <Users className="h-8 w-8" />
+              CRM - Gestão de Clientes
+            </h1>
+            <p className="text-purple-100">Gerencie seus contatos e relacionamentos comerciais</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-purple-600 hover:bg-purple-700" onClick={resetForm}>
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Cliente
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nome *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Telefone</Label>
-                  <Input
-                    id="phone"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="company">Empresa</Label>
-                  <Input
-                    id="company"
-                    value={formData.company}
-                    onChange={(e) => setFormData({...formData, company: e.target.value})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="lead">Lead</SelectItem>
-                      <SelectItem value="proposta">Proposta</SelectItem>
-                      <SelectItem value="ativo">Ativo</SelectItem>
-                      <SelectItem value="fechado">Fechado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="value">Valor</Label>
-                  <Input
-                    id="value"
-                    type="number"
-                    value={formData.value}
-                    onChange={(e) => setFormData({...formData, value: Number(e.target.value)})}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="notes">Observações</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({...formData, notes: e.target.value})}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={clientMutation.isPending}>
-                    {clientMutation.isPending ? 'Salvando...' : 'Salvar'}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={resetForm}>
-                    Cancelar
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
 
-        {/* Clients Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Lista de Clientes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center py-8">Carregando...</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Valor</TableHead>
-                    <TableHead>Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredClients.map((client) => (
-                    <TableRow key={client.id}>
-                      <TableCell className="font-medium">{client.name}</TableCell>
-                      <TableCell>{client.company}</TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {client.phone && (
-                            <div className="flex items-center gap-2 text-sm">
-                              <Phone className="h-3 w-3" />
-                              {client.phone}
+          {/* Status Manager */}
+          <CRMStatusManager />
+
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-400 text-sm font-medium">Total Clientes</p>
+                    <p className="text-2xl font-bold text-white">{stats.total}</p>
+                  </div>
+                  <Users className="h-8 w-8 text-green-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-400 text-sm font-medium">Leads Ativos</p>
+                    <p className="text-2xl font-bold text-white">{stats.leads}</p>
+                  </div>
+                  <Phone className="h-8 w-8 text-blue-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-purple-400 text-sm font-medium">Valor Pipeline</p>
+                    <p className="text-2xl font-bold text-white">R$ {stats.pipeline.toLocaleString()}</p>
+                  </div>
+                  <DollarSign className="h-8 w-8 text-purple-400" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800 border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-orange-400 text-sm font-medium">Clientes Ativos</p>
+                    <p className="text-2xl font-bold text-white">{stats.ativos}</p>
+                  </div>
+                  <Calendar className="h-8 w-8 text-orange-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Actions Bar */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Buscar clientes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-purple-600 hover:bg-purple-700" onClick={resetForm}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Cliente
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md bg-gray-900 border-gray-800 text-white">
+                <DialogHeader>
+                  <DialogTitle>{editingClient ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="name" className="text-white">Nome *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      required
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-white">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone" className="text-white">Telefone</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="company" className="text-white">Empresa</Label>
+                    <Input
+                      id="company"
+                      value={formData.company}
+                      onChange={(e) => setFormData({...formData, company: e.target.value})}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="status" className="text-white">Status</Label>
+                    <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-800 border-gray-700">
+                        {customStatuses.map((status) => (
+                          <SelectItem key={status.id} value={status.name} className="text-white hover:bg-gray-700">
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: status.color }}
+                              />
+                              {status.name}
                             </div>
-                          )}
-                          {client.email && (
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
-                              <Mail className="h-3 w-3" />
-                              {client.email}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(client.status)}>
-                          {client.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>R$ {(client.value || 0).toLocaleString()}</TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => handleEdit(client)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => deleteMutation.mutate(client.id)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="value" className="text-white">Valor</Label>
+                    <Input
+                      id="value"
+                      type="number"
+                      value={formData.value}
+                      onChange={(e) => setFormData({...formData, value: Number(e.target.value)})}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="notes" className="text-white">Observações</Label>
+                    <Textarea
+                      id="notes"
+                      value={formData.notes}
+                      onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                      className="bg-gray-800 border-gray-700 text-white"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="submit" disabled={clientMutation.isPending} className="bg-purple-600 hover:bg-purple-700">
+                      {clientMutation.isPending ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                    <Button type="button" variant="outline" onClick={resetForm} className="border-gray-700 text-white hover:bg-gray-800">
+                      Cancelar
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Clients Table */}
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader>
+              <CardTitle className="text-white">Lista de Clientes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="text-center py-8 text-white">Carregando...</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-gray-700">
+                      <TableHead className="text-gray-300">Nome</TableHead>
+                      <TableHead className="text-gray-300">Empresa</TableHead>
+                      <TableHead className="text-gray-300">Contato</TableHead>
+                      <TableHead className="text-gray-300">Status</TableHead>
+                      <TableHead className="text-gray-300">Valor</TableHead>
+                      <TableHead className="text-gray-300">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </Layout>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredClients.map((client) => (
+                      <TableRow key={client.id} className="border-gray-700">
+                        <TableCell className="font-medium text-white">{client.name}</TableCell>
+                        <TableCell className="text-gray-300">{client.company}</TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {client.phone && (
+                              <div className="flex items-center gap-2 text-sm text-gray-300">
+                                <Phone className="h-3 w-3" />
+                                {client.phone}
+                              </div>
+                            )}
+                            {client.email && (
+                              <div className="flex items-center gap-2 text-sm text-gray-400">
+                                <Mail className="h-3 w-3" />
+                                {client.email}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge style={getStatusColor(client.status)}>
+                            {client.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-white">R$ {(client.value || 0).toLocaleString()}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleEdit(client)} className="border-gray-700 text-white hover:bg-gray-800">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => deleteMutation.mutate(client.id)}
+                              disabled={deleteMutation.isPending}
+                              className="border-gray-700 text-white hover:bg-gray-800 hover:text-red-400"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    </div>
   );
 };
 
