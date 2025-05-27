@@ -152,7 +152,7 @@ const QRCodeGenerator = () => {
                 <p className="text-lg font-semibold">Escaneie o QR Code</p>
                 <p className="text-gray-600">
                   1. Abra o WhatsApp no seu celular<br/>
-                  2. Toque em "Mais opções" ⋮ > "WhatsApp Web"<br/>
+                  2. Toque em "Mais opções" ⋮ e depois "WhatsApp Web"<br/>
                   3. Escaneie este código
                 </p>
                 <div className="bg-blue-50 p-3 rounded-lg">
