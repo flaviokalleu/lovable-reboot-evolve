@@ -9,16 +9,282 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      ai_analysis: {
+        Row: {
+          analysis_type: string
+          content: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          analysis_type: string
+          content: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          analysis_type?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_analysis_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      budgets: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["transaction_category"]
+          created_at: string | null
+          end_date: string
+          id: string
+          period: string | null
+          start_date: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: Database["public"]["Enums"]["transaction_category"]
+          created_at?: string | null
+          end_date: string
+          id?: string
+          period?: string | null
+          start_date: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["transaction_category"]
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          period?: string | null
+          start_date?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "budgets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          subscription_end_date: string | null
+          subscription_status:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
+          updated_at: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          subscription_end_date?: string | null
+          subscription_status?:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          subscription_end_date?: string | null
+          subscription_status?:
+            | Database["public"]["Enums"]["subscription_status"]
+            | null
+          updated_at?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["transaction_category"]
+          created_at: string | null
+          description: string | null
+          id: string
+          processed_by_ai: boolean | null
+          receipt_url: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string | null
+          user_id: string
+          whatsapp_message_id: string | null
+        }
+        Insert: {
+          amount: number
+          category: Database["public"]["Enums"]["transaction_category"]
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          processed_by_ai?: boolean | null
+          receipt_url?: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string | null
+          user_id: string
+          whatsapp_message_id?: string | null
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["transaction_category"]
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          processed_by_ai?: boolean | null
+          receipt_url?: string | null
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string | null
+          user_id?: string
+          whatsapp_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_connected: boolean | null
+          last_connected_at: string | null
+          qr_code: string | null
+          session_data: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_connected_at?: string | null
+          qr_code?: string | null
+          session_data?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_connected?: boolean | null
+          last_connected_at?: string | null
+          qr_code?: string | null
+          session_data?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          ai_response: string | null
+          created_at: string | null
+          id: string
+          media_url: string | null
+          message_content: string | null
+          message_type: string | null
+          processed: boolean | null
+          user_id: string | null
+          user_phone: string
+        }
+        Insert: {
+          ai_response?: string | null
+          created_at?: string | null
+          id?: string
+          media_url?: string | null
+          message_content?: string | null
+          message_type?: string | null
+          processed?: boolean | null
+          user_id?: string | null
+          user_phone: string
+        }
+        Update: {
+          ai_response?: string | null
+          created_at?: string | null
+          id?: string
+          media_url?: string | null
+          message_content?: string | null
+          message_type?: string | null
+          processed?: boolean | null
+          user_id?: string | null
+          user_phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      subscription_status: "active" | "inactive" | "pending" | "expired"
+      transaction_category:
+        | "food"
+        | "transport"
+        | "entertainment"
+        | "health"
+        | "education"
+        | "shopping"
+        | "bills"
+        | "salary"
+        | "investment"
+        | "other"
+      transaction_type: "income" | "expense"
+      user_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +399,22 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      subscription_status: ["active", "inactive", "pending", "expired"],
+      transaction_category: [
+        "food",
+        "transport",
+        "entertainment",
+        "health",
+        "education",
+        "shopping",
+        "bills",
+        "salary",
+        "investment",
+        "other",
+      ],
+      transaction_type: ["income", "expense"],
+      user_role: ["admin", "user"],
+    },
   },
 } as const
