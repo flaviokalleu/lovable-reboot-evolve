@@ -25,6 +25,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Transações', href: '/transactions', icon: DollarSign },
     { name: 'Orçamentos', href: '/budgets', icon: DollarSign },
     { name: 'Relatórios', href: '/reports', icon: DollarSign },
+    { name: 'WhatsApp & IA', href: '/whatsapp', icon: DollarSign },
   ];
 
   if (isAdmin) {
