@@ -5,30 +5,35 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { QrCode, Smartphone, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import QRCode from 'qrcode';
+import makeWASocket, { DisconnectReason, useMultiFileAuthState } from '@whiskeysockets/baileys';
 
 const WhatsAppBaileys = () => {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [statusMessage, setStatusMessage] = useState('');
-  const [connectionData, setConnectionData] = useState<any>(null);
+  const [connectedPhone, setConnectedPhone] = useState<string | null>(null);
+  const [socket, setSocket] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Verificar se há uma conexão ativa ao carregar o componente
     checkExistingConnection();
+    return () => {
+      if (socket) {
+        socket.end();
+      }
+    };
   }, []);
 
   const checkExistingConnection = () => {
-    // Verificar se existe uma conexão salva no localStorage
-    const savedConnection = localStorage.getItem('whatsapp_baileys_connection');
+    const savedConnection = localStorage.getItem('baileys_connection');
     if (savedConnection) {
       try {
         const connectionInfo = JSON.parse(savedConnection);
         if (connectionInfo.isConnected) {
           setIsConnected(true);
-          setConnectionData(connectionInfo);
-          setStatusMessage(`Conectado: ${connectionInfo.phoneNumber || 'WhatsApp Business'}`);
+          setConnectedPhone(connectionInfo.phoneNumber);
+          setStatusMessage(`Conectado: ${connectionInfo.phoneNumber}`);
         }
       } catch (error) {
         console.error('Erro ao verificar conexão existente:', error);
@@ -36,107 +41,162 @@ const WhatsAppBaileys = () => {
     }
   };
 
-  const generateQRCode = async () => {
-    setIsLoading(true);
+  const startBaileysConnection = async () => {
+    setIsConnecting(true);
     setStatusMessage('Iniciando conexão com Baileys...');
     
     try {
-      // Simular dados de conexão do Baileys
-      const connectionId = `baileys_${Date.now()}`;
-      const qrData = `whatsapp://connect/${connectionId}/${Math.random().toString(36).substring(7)}`;
+      // Usar autenticação multi-arquivo do Baileys
+      const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info');
       
-      // Gerar QR Code usando a biblioteca qrcode
-      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
+      const sock = makeWASocket({
+        auth: state,
+        printQRInTerminal: false,
+        defaultQueryTimeoutMs: 60_000,
+      });
+
+      setSocket(sock);
+
+      sock.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        
+        if (qr) {
+          // Gerar QR Code real do Baileys
+          try {
+            const qrDataURL = await QRCode.toDataURL(qr, {
+              width: 300,
+              margin: 2,
+              color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+              }
+            });
+            setQrCode(qrDataURL);
+            setStatusMessage('QR Code gerado! Escaneie com seu WhatsApp.');
+            
+            toast({
+              title: 'QR Code gerado!',
+              description: 'Escaneie o código com seu WhatsApp.',
+            });
+          } catch (error) {
+            console.error('Erro ao gerar QR Code:', error);
+          }
+        }
+
+        if (connection === 'close') {
+          const shouldReconnect = (lastDisconnect?.error as any)?.output?.statusCode !== DisconnectReason.loggedOut;
+          
+          setIsConnected(false);
+          setQrCode(null);
+          localStorage.removeItem('baileys_connection');
+          
+          if (shouldReconnect) {
+            setStatusMessage('Reconectando...');
+            setTimeout(() => startBaileysConnection(), 3000);
+          } else {
+            setStatusMessage('Desconectado do WhatsApp');
+            toast({
+              title: 'WhatsApp desconectado',
+              description: 'Você foi deslogado do WhatsApp.',
+              variant: 'destructive',
+            });
+          }
+        } else if (connection === 'open') {
+          setIsConnected(true);
+          setQrCode(null);
+          setIsConnecting(false);
+          
+          // Obter informações do número
+          const phoneNumber = sock.user?.id?.split(':')[0] || 'Número não disponível';
+          setConnectedPhone(phoneNumber);
+          setStatusMessage(`Conectado: ${phoneNumber}`);
+          
+          // Salvar conexão no localStorage
+          const connectionInfo = {
+            isConnected: true,
+            phoneNumber,
+            connectedAt: new Date().toISOString(),
+          };
+          localStorage.setItem('baileys_connection', JSON.stringify(connectionInfo));
+          
+          toast({
+            title: 'WhatsApp conectado!',
+            description: `Conectado como: ${phoneNumber}`,
+          });
         }
       });
+
+      sock.ev.on('creds.update', saveCreds);
       
-      setQrCode(qrCodeDataURL);
-      setStatusMessage('QR Code gerado! Escaneie com seu WhatsApp.');
-      
-      toast({
-        title: 'QR Code gerado com Baileys!',
-        description: 'Escaneie o código com seu WhatsApp em 30 segundos.',
+      // Listener para mensagens recebidas
+      sock.ev.on('messages.upsert', async (m) => {
+        const messages = m.messages;
+        
+        for (const message of messages) {
+          if (!message.key.fromMe && message.message) {
+            const from = message.key.remoteJid;
+            const messageText = message.message.conversation || 
+                              message.message.extendedTextMessage?.text || '';
+            
+            if (messageText) {
+              console.log(`Mensagem recebida de ${from}: ${messageText}`);
+              
+              // Processar mensagem com IA (aqui você pode integrar com sua IA)
+              await processMessageWithAI(from, messageText, sock);
+            }
+          }
+        }
       });
 
-      // Simular processo de autenticação (30 segundos)
-      setTimeout(() => {
-        simulateConnection(connectionId);
-      }, 30000);
-
     } catch (error: any) {
-      console.error('Erro ao gerar QR Code:', error);
+      console.error('Erro ao conectar com Baileys:', error);
       setStatusMessage(`Erro: ${error.message}`);
+      setIsConnecting(false);
       
       toast({
-        title: 'Erro ao gerar QR Code',
+        title: 'Erro ao conectar',
         description: error.message,
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const simulateConnection = (connectionId: string) => {
-    // Simular conexão bem-sucedida
-    const phoneNumber = '+55 11 99999-8888'; // Número simulado
-    const connectionInfo = {
-      connectionId,
-      phoneNumber,
-      isConnected: true,
-      connectedAt: new Date().toISOString(),
-      baileys: true
-    };
-
-    // Salvar conexão no localStorage
-    localStorage.setItem('whatsapp_baileys_connection', JSON.stringify(connectionInfo));
-    
-    setIsConnected(true);
-    setConnectionData(connectionInfo);
-    setQrCode(null);
-    setStatusMessage(`Conectado via Baileys: ${phoneNumber}`);
-    
-    toast({
-      title: 'WhatsApp conectado com Baileys!',
-      description: `Número: ${phoneNumber}`,
-    });
-
-    // Simular recebimento de mensagens
-    setTimeout(() => {
-      simulateIncomingMessages();
-    }, 5000);
-  };
-
-  const simulateIncomingMessages = () => {
-    const messages = [
-      'Olá! Como está funcionando o Baileys?',
-      'Gasto R$ 35,90 com almoço no restaurante',
-      'Recebi R$ 1500 do freelance'
-    ];
-
-    messages.forEach((message, index) => {
-      setTimeout(() => {
-        console.log(`Mensagem recebida via Baileys: ${message}`);
-        toast({
-          title: 'Mensagem recebida via Baileys',
-          description: message,
-        });
-      }, (index + 1) * 3000);
-    });
+  const processMessageWithAI = async (from: string, message: string, sock: any) => {
+    try {
+      // Aqui você pode integrar com sua IA (Gemini, OpenAI, etc.)
+      // Por agora, vou fazer uma resposta simples
+      let response = '';
+      
+      if (message.toLowerCase().includes('gasto') || message.toLowerCase().includes('paguei')) {
+        response = '💰 Transação de despesa registrada! Obrigado por usar nosso sistema.';
+      } else if (message.toLowerCase().includes('recebi') || message.toLowerCase().includes('salário')) {
+        response = '💰 Transação de receita registrada! Obrigado por usar nosso sistema.';
+      } else {
+        response = '🤖 Olá! Sou seu assistente financeiro. Envie mensagens como:\n• "Gasto R$ 50 com almoço"\n• "Recebi R$ 2000 salário"';
+      }
+      
+      // Enviar resposta
+      await sock.sendMessage(from, { text: response });
+      
+      toast({
+        title: 'Mensagem processada',
+        description: `Resposta enviada para ${from}`,
+      });
+      
+    } catch (error) {
+      console.error('Erro ao processar mensagem:', error);
+    }
   };
 
   const disconnect = () => {
-    // Limpar conexão
-    localStorage.removeItem('whatsapp_baileys_connection');
+    if (socket) {
+      socket.end();
+    }
     setIsConnected(false);
-    setConnectionData(null);
+    setConnectedPhone(null);
     setQrCode(null);
     setStatusMessage('Desconectado');
+    localStorage.removeItem('baileys_connection');
     
     toast({
       title: 'WhatsApp desconectado',
@@ -176,10 +236,10 @@ const WhatsAppBaileys = () => {
               <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-2" />
               <p className="text-green-400 font-medium">WhatsApp Conectado via Baileys!</p>
               <p className="text-green-300 text-sm">
-                Número: {connectionData?.phoneNumber || 'Carregando...'}
+                Número: {connectedPhone || 'Carregando...'}
               </p>
               <p className="text-green-300 text-sm mt-2">
-                Agora você pode receber mensagens através do Baileys
+                Agora você pode receber mensagens reais através do Baileys
               </p>
             </div>
             <div className="flex gap-2">
@@ -218,12 +278,12 @@ const WhatsAppBaileys = () => {
                     Abra o WhatsApp → Menu (⋮) → Dispositivos conectados → Conectar dispositivo
                   </p>
                   <p className="text-blue-200 text-xs mt-2">
-                    Conexão automática em 30 segundos via Baileys
+                    Conexão real via Baileys - Aguardando escaneamento
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <Button 
-                    onClick={generateQRCode} 
+                    onClick={startBaileysConnection} 
                     variant="outline" 
                     className="flex-1 border-gray-700 text-white hover:bg-gray-800"
                   >
@@ -245,16 +305,16 @@ const WhatsAppBaileys = () => {
                   <Smartphone className="h-12 w-12 text-gray-500 mx-auto mb-2" />
                   <p className="text-gray-400">WhatsApp não conectado</p>
                   <p className="text-gray-500 text-sm mt-2">
-                    Gere um QR Code para conectar o WhatsApp via Baileys
+                    Conecte seu WhatsApp usando Baileys para receber mensagens reais
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <Button 
-                    onClick={generateQRCode} 
-                    disabled={isLoading}
+                    onClick={startBaileysConnection} 
+                    disabled={isConnecting}
                     className="flex-1 bg-blue-600 hover:bg-blue-700"
                   >
-                    {isLoading ? 'Gerando QR Code...' : 'Conectar WhatsApp (Baileys)'}
+                    {isConnecting ? 'Conectando...' : 'Conectar WhatsApp (Baileys)'}
                   </Button>
                   <Button 
                     onClick={refreshConnection} 

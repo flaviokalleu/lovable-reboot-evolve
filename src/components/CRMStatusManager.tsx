@@ -1,14 +1,12 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Edit2, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
+import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
 
 interface CRMStatus {
   id: string;
@@ -16,138 +14,162 @@ interface CRMStatus {
   color: string;
   order_index: number;
   user_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const CRMStatusManager = () => {
   const { user } = useAuth();
+  const [statuses, setStatuses] = useState<CRMStatus[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editColor, setEditColor] = useState('#3b82f6');
+  const [newStatusName, setNewStatusName] = useState('');
+  const [newStatusColor, setNewStatusColor] = useState('#3b82f6');
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [newStatus, setNewStatus] = useState({ name: '', color: '#3b82f6' });
-  const [editingStatus, setEditingStatus] = useState<CRMStatus | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const { data: statuses, isLoading } = useQuery({
-    queryKey: ['crm-status', user?.id],
-    queryFn: async () => {
+  useEffect(() => {
+    if (user) {
+      loadStatuses();
+    }
+  }, [user]);
+
+  const loadStatuses = async () => {
+    try {
       const { data, error } = await supabase
-        .from('crm_status' as any)
+        .from('crm_status')
         .select('*')
         .eq('user_id', user?.id)
         .order('order_index');
-      
-      if (error) throw error;
-      return data as CRMStatus[];
-    },
-    enabled: !!user?.id,
-  });
 
-  const createStatusMutation = useMutation({
-    mutationFn: async (status: { name: string; color: string }) => {
-      const maxOrder = statuses?.length ? Math.max(...statuses.map(s => s.order_index)) : 0;
-      const { data, error } = await supabase
-        .from('crm_status' as any)
-        .insert({
-          name: status.name,
-          color: status.color,
-          order_index: maxOrder + 1,
-          user_id: user?.id,
-        })
-        .select()
-        .single();
-      
       if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crm-status'] });
-      setNewStatus({ name: '', color: '#3b82f6' });
-      setIsDialogOpen(false);
+      setStatuses((data || []) as CRMStatus[]);
+    } catch (error: any) {
       toast({
-        title: "Status criado!",
-        description: "Novo status adicionado com sucesso.",
+        title: 'Erro ao carregar status',
+        description: error.message,
+        variant: 'destructive',
       });
-    },
-  });
-
-  const updateStatusMutation = useMutation({
-    mutationFn: async (status: CRMStatus) => {
-      const { data, error } = await supabase
-        .from('crm_status' as any)
-        .update({
-          name: status.name,
-          color: status.color,
-        })
-        .eq('id', status.id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crm-status'] });
-      setEditingStatus(null);
-      setIsDialogOpen(false);
-      toast({
-        title: "Status atualizado!",
-        description: "Status editado com sucesso.",
-      });
-    },
-  });
-
-  const deleteStatusMutation = useMutation({
-    mutationFn: async (statusId: string) => {
-      const { error } = await supabase
-        .from('crm_status' as any)
-        .delete()
-        .eq('id', statusId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['crm-status'] });
-      toast({
-        title: "Status removido!",
-        description: "Status deletado com sucesso.",
-      });
-    },
-  });
-
-  const handleCreateStatus = () => {
-    if (!newStatus.name.trim()) return;
-    createStatusMutation.mutate(newStatus);
-  };
-
-  const handleUpdateStatus = () => {
-    if (!editingStatus || !editingStatus.name.trim()) return;
-    updateStatusMutation.mutate(editingStatus);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleEdit = (status: CRMStatus) => {
-    setEditingStatus(status);
-    setIsDialogOpen(true);
+    setEditingId(status.id);
+    setEditName(status.name);
+    setEditColor(status.color);
   };
 
-  const resetForm = () => {
-    setNewStatus({ name: '', color: '#3b82f6' });
-    setEditingStatus(null);
-    setIsDialogOpen(false);
+  const handleSave = async () => {
+    if (!editingId || !editName.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('crm_status')
+        .update({
+          name: editName.trim(),
+          color: editColor,
+        })
+        .eq('id', editingId);
+
+      if (error) throw error;
+
+      setStatuses(prev =>
+        prev.map(status =>
+          status.id === editingId
+            ? { ...status, name: editName.trim(), color: editColor }
+            : status
+        )
+      );
+
+      setEditingId(null);
+      setEditName('');
+      setEditColor('#3b82f6');
+
+      toast({
+        title: 'Status atualizado',
+        description: 'Status do CRM foi atualizado com sucesso.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao atualizar status',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCancel = () => {
+    setEditingId(null);
+    setEditName('');
+    setEditColor('#3b82f6');
+  };
+
+  const handleDelete = async (statusId: string) => {
+    try {
+      const { error } = await supabase
+        .from('crm_status')
+        .delete()
+        .eq('id', statusId);
+
+      if (error) throw error;
+
+      setStatuses(prev => prev.filter(status => status.id !== statusId));
+
+      toast({
+        title: 'Status removido',
+        description: 'Status do CRM foi removido com sucesso.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao remover status',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!newStatusName.trim()) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('crm_status')
+        .insert([{
+          user_id: user?.id,
+          name: newStatusName.trim(),
+          color: newStatusColor,
+          order_index: statuses.length + 1,
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setStatuses(prev => [...prev, data as CRMStatus]);
+      setNewStatusName('');
+      setNewStatusColor('#3b82f6');
+
+      toast({
+        title: 'Status criado',
+        description: 'Novo status do CRM foi criado com sucesso.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao criar status',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   if (isLoading) {
     return (
       <Card className="bg-gray-900 border-gray-800">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white">
-            <Settings className="h-5 w-5" />
-            Gerenciar Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-4">
-            <div className="h-4 bg-gray-700 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-700 rounded w-1/2"></div>
-          </div>
+        <CardContent className="p-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
         </CardContent>
       </Card>
     );
@@ -156,135 +178,83 @@ const CRMStatusManager = () => {
   return (
     <Card className="bg-gray-900 border-gray-800">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-white">
-          <Settings className="h-5 w-5" />
-          Gerenciar Status
-        </CardTitle>
+        <CardTitle className="text-white">Gerenciar Status do CRM</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              onClick={() => {
-                setNewStatus({ name: '', color: '#3b82f6' });
-                setEditingStatus(null);
-                setIsDialogOpen(true);
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Status
+      <CardContent className="space-y-4">
+        {/* Criar novo status */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-gray-300">Novo Status</h4>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Nome do status"
+              value={newStatusName}
+              onChange={(e) => setNewStatusName(e.target.value)}
+              className="bg-gray-800 border-gray-700 text-white"
+            />
+            <Input
+              type="color"
+              value={newStatusColor}
+              onChange={(e) => setNewStatusColor(e.target.value)}
+              className="w-16 bg-gray-800 border-gray-700"
+            />
+            <Button onClick={handleCreate} size="sm">
+              <Plus className="h-4 w-4" />
             </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-gray-900 border-gray-800 text-white">
-            <DialogHeader>
-              <DialogTitle>{editingStatus ? 'Editar Status' : 'Novo Status'}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name" className="text-white">Nome do Status</Label>
-                <Input
-                  id="name"
-                  placeholder="Nome do status"
-                  value={editingStatus ? editingStatus.name : newStatus.name}
-                  onChange={(e) => editingStatus 
-                    ? setEditingStatus({ ...editingStatus, name: e.target.value })
-                    : setNewStatus({ ...newStatus, name: e.target.value })
-                  }
-                  className="bg-gray-800 border-gray-700 text-white"
-                />
-              </div>
-              <div>
-                <Label htmlFor="color" className="text-white">Cor</Label>
-                <input
-                  type="color"
-                  value={editingStatus ? editingStatus.color : newStatus.color}
-                  onChange={(e) => editingStatus 
-                    ? setEditingStatus({ ...editingStatus, color: e.target.value })
-                    : setNewStatus({ ...newStatus, color: e.target.value })
-                  }
-                  className="w-12 h-10 rounded border cursor-pointer"
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  onClick={() => {
-                    if (editingStatus) {
-                      if (editingStatus.name.trim()) {
-                        updateStatusMutation.mutate(editingStatus);
-                      }
-                    } else {
-                      if (newStatus.name.trim()) {
-                        createStatusMutation.mutate(newStatus);
-                      }
-                    }
-                  }}
-                  disabled={createStatusMutation.isPending || updateStatusMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {editingStatus ? 'Salvar' : 'Criar'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setNewStatus({ name: '', color: '#3b82f6' });
-                    setEditingStatus(null);
-                    setIsDialogOpen(false);
-                  }} 
-                  className="border-gray-700 text-white hover:bg-gray-800"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+          </div>
+        </div>
 
-        <div className="space-y-3">
-          <h4 className="font-medium text-white">Status Existentes:</h4>
-          {statuses && statuses.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {statuses.map((status) => (
-                <div
-                  key={status.id}
-                  className="flex items-center justify-between p-3 border border-gray-700 rounded-lg hover:bg-gray-800 transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: status.color }}
-                    />
-                    <span className="font-medium text-white">{status.name}</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingStatus(status);
-                        setIsDialogOpen(true);
-                      }}
-                      className="text-gray-400 hover:text-white hover:bg-gray-700"
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteStatusMutation.mutate(status.id)}
-                      className="text-gray-400 hover:text-red-400 hover:bg-gray-700"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+        {/* Lista de status */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-gray-300">Status Existentes</h4>
+          {statuses.map((status) => (
+            <div key={status.id} className="flex items-center gap-2 p-2 bg-gray-800 rounded-lg">
+              {editingId === status.id ? (
+                <>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="flex-1 bg-gray-700 border-gray-600 text-white"
+                  />
+                  <Input
+                    type="color"
+                    value={editColor}
+                    onChange={(e) => setEditColor(e.target.value)}
+                    className="w-16 bg-gray-700 border-gray-600"
+                  />
+                  <Button onClick={handleSave} size="sm" variant="outline">
+                    <Save className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={handleCancel} size="sm" variant="outline">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: status.color }}
+                  />
+                  <span className="flex-1 text-white">{status.name}</span>
+                  <Button
+                    onClick={() => handleEdit(status)}
+                    size="sm"
+                    variant="outline"
+                    className="border-gray-700 text-gray-300"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => handleDelete(status.id)}
+                    size="sm"
+                    variant="outline"
+                    className="border-gray-700 text-red-400"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
             </div>
-          ) : (
-            <p className="text-gray-400 text-sm">
-              Nenhum status personalizado criado ainda.
-            </p>
-          )}
+          ))}
         </div>
       </CardContent>
     </Card>
