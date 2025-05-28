@@ -29,7 +29,7 @@ const CategoryAnalysis = () => {
 
       if (error) throw error;
 
-      const categoryLabels = {
+      const categoryLabels: Record<string, string> = {
         food: 'Alimentação',
         transport: 'Transporte',
         entertainment: 'Entretenimento',
@@ -62,19 +62,19 @@ const CategoryAnalysis = () => {
           if (!acc[t.category]) acc[t.category] = 0;
           acc[t.category] += Number(t.amount);
           return acc;
-        }, {});
+        }, {} as Record<string, number>);
       };
 
       const thisMonthTotals = calculateCategoryTotals(thisMonthTransactions);
       const lastMonthTotals = calculateCategoryTotals(lastMonthTransactions);
 
       // Calcular total geral deste mês
-      const totalThisMonth = Object.values(thisMonthTotals).reduce((sum: number, amount: any) => sum + Number(amount), 0);
+      const totalThisMonth = Object.values(thisMonthTotals).reduce((sum, amount) => sum + amount, 0);
 
       // Criar análise por categoria
       const categoryAnalysis = Object.keys({...thisMonthTotals, ...lastMonthTotals}).map(category => {
-        const thisMonthAmount = Number(thisMonthTotals[category]) || 0;
-        const lastMonthAmount = Number(lastMonthTotals[category]) || 0;
+        const thisMonthAmount = thisMonthTotals[category] || 0;
+        const lastMonthAmount = lastMonthTotals[category] || 0;
         const percentage = totalThisMonth > 0 ? (thisMonthAmount / totalThisMonth) * 100 : 0;
         const trend = lastMonthAmount > 0 ? ((thisMonthAmount - lastMonthAmount) / lastMonthAmount) * 100 : 0;
 
@@ -95,9 +95,9 @@ const CategoryAnalysis = () => {
 
   if (isLoading) {
     return (
-      <Card className="border-slate-800 bg-slate-900/50">
+      <Card className="border-slate-700 bg-slate-800">
         <CardHeader>
-          <CardTitle className="text-white">Análise por Categoria</CardTitle>
+          <CardTitle className="text-slate-100">Análise por Categoria</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -117,20 +117,20 @@ const CategoryAnalysis = () => {
   }
 
   return (
-    <Card className="border-slate-800 bg-slate-900/50">
-      <CardHeader className="border-b border-slate-800">
-        <CardTitle className="text-white flex items-center gap-2">
-          <PieChart className="h-5 w-5 text-pink-400" />
+    <Card className="border-slate-700 bg-slate-800">
+      <CardHeader className="border-b border-slate-700">
+        <CardTitle className="text-slate-100 flex items-center gap-2">
+          <PieChart className="h-5 w-5 text-blue-400" />
           Análise por Categoria
         </CardTitle>
       </CardHeader>
       <CardContent className="p-6">
         {!analysis || analysis.length === 0 ? (
           <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 bg-slate-800 rounded-full flex items-center justify-center">
-              <PieChart className="h-8 w-8 text-slate-600" />
+            <div className="w-16 h-16 mx-auto mb-4 bg-slate-700 rounded-full flex items-center justify-center">
+              <PieChart className="h-8 w-8 text-slate-500" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">
+            <h3 className="text-lg font-semibold text-slate-100 mb-2">
               Nenhuma categoria encontrada
             </h3>
             <p className="text-slate-400">
@@ -139,17 +139,17 @@ const CategoryAnalysis = () => {
           </div>
         ) : (
           <div className="space-y-6">
-            {analysis.map((item, index) => (
+            {analysis.map((item) => (
               <div key={item.category} className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-white">{item.name}</span>
-                    <Badge variant="outline" className="border-slate-600 text-slate-400 text-xs">
+                    <span className="text-sm font-medium text-slate-100">{item.name}</span>
+                    <Badge variant="outline" className="border-slate-600 text-slate-300 text-xs">
                       {item.percentage.toFixed(1)}%
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-white">
+                    <span className="text-sm font-bold text-slate-100">
                       R$ {item.thisMonth.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                     <div className="flex items-center gap-1">
@@ -168,7 +168,7 @@ const CategoryAnalysis = () => {
                 </div>
                 <Progress 
                   value={item.percentage} 
-                  className="h-2 bg-slate-800"
+                  className="h-2 bg-slate-700"
                 />
                 <div className="flex justify-between text-xs text-slate-400">
                   <span>Mês atual</span>

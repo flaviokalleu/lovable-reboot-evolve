@@ -59,39 +59,39 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   };
 
   const SidebarContent = () => (
-    <div className="h-full flex flex-col">
-      <div className="p-4 sm:p-6">
-        <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+    <div className="h-full flex flex-col bg-slate-800 border-r border-slate-700">
+      <div className="p-6 border-b border-slate-700">
+        <h1 className="text-2xl font-bold text-slate-100">
           FinanceIA
         </h1>
-        <p className="text-slate-400 text-xs sm:text-sm">Sistema de Gestão Financeira</p>
+        <p className="text-slate-400 text-sm">Sistema Empresarial</p>
       </div>
 
-      <nav className="space-y-1 sm:space-y-2 px-4 sm:px-6 flex-1">
+      <nav className="space-y-2 px-6 flex-1 py-6">
         {menuItems.map((item) => (
           <Button
             key={item.path}
             variant={isActive(item.path) ? "default" : "ghost"}
-            className={`w-full justify-start text-sm ${
+            className={`w-full justify-start text-sm transition-colors ${
               isActive(item.path) 
-                ? "bg-gradient-to-r from-cyan-600 to-purple-600 text-white" 
-                : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+                ? "bg-blue-600 text-white hover:bg-blue-700" 
+                : "text-slate-300 hover:text-white hover:bg-slate-700"
             }`}
             onClick={() => handleNavigation(item.path)}
           >
-            <item.icon className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
-            <span className="truncate">{item.label}</span>
+            <item.icon className="h-5 w-5 mr-3" />
+            <span>{item.label}</span>
           </Button>
         ))}
       </nav>
 
-      <div className="p-4 sm:p-6 space-y-2">
+      <div className="p-6 space-y-2 border-t border-slate-700">
         <Button
           variant="ghost"
-          className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-700/50 text-sm"
+          className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-700 text-sm"
           onClick={() => handleNavigation('/settings')}
         >
-          <Settings className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
+          <Settings className="h-5 w-5 mr-3" />
           Configurações
         </Button>
         <Button
@@ -99,7 +99,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-900/20 text-sm"
           onClick={handleSignOut}
         >
-          <LogOut className="h-4 w-4 sm:h-5 sm:w-5 mr-2 sm:mr-3" />
+          <LogOut className="h-5 w-5 mr-3" />
           Sair
         </Button>
       </div>
@@ -108,25 +108,25 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   if (isMobile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="min-h-screen bg-slate-900">
         {/* Mobile Header */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 p-4 flex items-center justify-between">
+        <div className="bg-slate-800 border-b border-slate-700 p-4 flex items-center justify-between">
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="sm" className="text-white">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72 bg-slate-800/95 backdrop-blur-sm border-slate-700/50 p-0">
+            <SheetContent side="left" className="w-72 p-0">
               <SidebarContent />
             </SheetContent>
           </Sheet>
           
-          <h1 className="text-lg font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+          <h1 className="text-lg font-bold text-slate-100">
             FinanceIA
           </h1>
           
-          <div className="w-8"></div> {/* Spacer for centering */}
+          <div className="w-8"></div>
         </div>
 
         {/* Main Content */}
@@ -138,9 +138,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex">
+    <div className="min-h-screen bg-slate-900 flex">
       {/* Desktop Sidebar */}
-      <div className="w-64 bg-slate-800/50 backdrop-blur-sm border-r border-slate-700/50">
+      <div className="w-64">
         <SidebarContent />
       </div>
 
