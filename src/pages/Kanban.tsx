@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -10,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Calendar, User, Trash2, Edit } from 'lucide-react';
+import { Plus, Calendar, User, Trash2, Edit, Sparkles, Target } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface KanbanBoard {
@@ -18,6 +19,7 @@ interface KanbanBoard {
   name: string;
   description?: string;
   created_at: string;
+  user_id: string;
 }
 
 interface KanbanTask {
@@ -26,11 +28,12 @@ interface KanbanTask {
   description?: string;
   status: string;
   priority: 'baixa' | 'media' | 'alta' | 'urgente';
-  assigned_to?: string;
+  assignee?: string;
   due_date?: string;
   board_id: string;
   created_at: string;
   updated_at: string;
+  user_id: string;
 }
 
 const Kanban = () => {
@@ -44,37 +47,39 @@ const Kanban = () => {
     description: '',
     status: 'todo',
     priority: 'media' as const,
-    assigned_to: '',
+    assignee: '',
     due_date: ''
   });
   const { toast } = useToast();
 
   const statuses = [
-    { id: 'todo', name: 'A Fazer', color: 'bg-gray-500' },
-    { id: 'in_progress', name: 'Em Progresso', color: 'bg-blue-500' },
-    { id: 'review', name: 'Em Revisão', color: 'bg-yellow-500' },
-    { id: 'done', name: 'Concluído', color: 'bg-green-500' }
+    { id: 'todo', name: 'A Fazer', color: 'from-slate-600 to-slate-700', iconColor: 'text-slate-300' },
+    { id: 'in_progress', name: 'Em Progresso', color: 'from-blue-600 to-blue-700', iconColor: 'text-blue-300' },
+    { id: 'review', name: 'Em Revisão', color: 'from-yellow-600 to-yellow-700', iconColor: 'text-yellow-300' },
+    { id: 'done', name: 'Concluído', color: 'from-emerald-600 to-emerald-700', iconColor: 'text-emerald-300' }
   ];
 
   const priorities = [
-    { value: 'baixa', label: 'Baixa', color: 'bg-green-100 text-green-800' },
-    { value: 'media', label: 'Média', color: 'bg-yellow-100 text-yellow-800' },
-    { value: 'alta', label: 'Alta', color: 'bg-orange-100 text-orange-800' },
-    { value: 'urgente', label: 'Urgente', color: 'bg-red-100 text-red-800' }
+    { value: 'baixa', label: 'Baixa', color: 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' },
+    { value: 'media', label: 'Média', color: 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white' },
+    { value: 'alta', label: 'Alta', color: 'bg-gradient-to-r from-orange-500 to-red-500 text-white' },
+    { value: 'urgente', label: 'Urgente', color: 'bg-gradient-to-r from-red-500 to-rose-500 text-white animate-pulse' }
   ];
 
   useEffect(() => {
-    if (selectedBoard) {
+    if (selectedBoard && user) {
       loadTasks();
     }
-  }, [selectedBoard]);
+  }, [selectedBoard, user]);
 
   const loadTasks = async () => {
+    if (!selectedBoard || !user) return;
+
     try {
       const { data, error } = await supabase
         .from('kanban_tasks')
         .select('*')
-        .eq('board_id', selectedBoard?.id)
+        .eq('board_id', selectedBoard.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -87,7 +92,12 @@ const Kanban = () => {
         return;
       }
 
-      setTasks(data || []);
+      const typedTasks = (data || []).map(task => ({
+        ...task,
+        priority: task.priority as 'baixa' | 'media' | 'alta' | 'urgente'
+      }));
+
+      setTasks(typedTasks);
     } catch (error) {
       console.error('Erro ao carregar tarefas:', error);
       toast({
@@ -99,7 +109,7 @@ const Kanban = () => {
   };
 
   const createTask = async () => {
-    if (!selectedBoard) {
+    if (!selectedBoard || !user) {
       toast({
         title: 'Nenhum quadro selecionado',
         description: 'Selecione um quadro para criar uma tarefa.',
@@ -114,7 +124,8 @@ const Kanban = () => {
         .insert([{
           ...newTask,
           board_id: selectedBoard.id,
-          assigned_to: user?.id || null,
+          user_id: user.id,
+          assignee: newTask.assignee || null,
         }])
         .select()
         .single();
@@ -129,14 +140,19 @@ const Kanban = () => {
         return;
       }
 
-      setTasks([...tasks, data]);
+      const typedTask = {
+        ...data,
+        priority: data.priority as 'baixa' | 'media' | 'alta' | 'urgente'
+      };
+
+      setTasks([...tasks, typedTask]);
       setShowTaskForm(false);
       setNewTask({
         title: '',
         description: '',
         status: 'todo',
         priority: 'media',
-        assigned_to: '',
+        assignee: '',
         due_date: ''
       });
       toast({
@@ -159,7 +175,14 @@ const Kanban = () => {
     try {
       const { data, error } = await supabase
         .from('kanban_tasks')
-        .update({ ...editingTask })
+        .update({ 
+          title: editingTask.title,
+          description: editingTask.description,
+          status: editingTask.status,
+          priority: editingTask.priority,
+          assignee: editingTask.assignee,
+          due_date: editingTask.due_date
+        })
         .eq('id', editingTask.id)
         .select()
         .single();
@@ -174,7 +197,12 @@ const Kanban = () => {
         return;
       }
 
-      setTasks(tasks.map(task => (task.id === editingTask.id ? data : task)));
+      const typedTask = {
+        ...data,
+        priority: data.priority as 'baixa' | 'media' | 'alta' | 'urgente'
+      };
+
+      setTasks(tasks.map(task => (task.id === editingTask.id ? typedTask : task)));
       setEditingTask(null);
       toast({
         title: 'Tarefa atualizada',
@@ -224,8 +252,11 @@ const Kanban = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 border-4 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-white text-lg">Carregando...</p>
+        </div>
       </div>
     );
   }
@@ -236,13 +267,19 @@ const Kanban = () => {
 
   return (
     <Layout>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Kanban</h1>
-          <p className="text-gray-400">Gerencie suas tarefas e projetos</p>
+      <div className="space-y-8 min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-6 border border-slate-700/50 shadow-2xl">
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg">
+              <Target className="h-8 w-8" />
+            </div>
+            Kanban
+            <Sparkles className="h-6 w-6 text-yellow-400 animate-pulse" />
+          </h1>
+          <p className="text-slate-300 mt-2">Gerencie suas tarefas e projetos com elegância</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
             <KanbanBoardManager 
               onBoardSelect={setSelectedBoard}
@@ -252,64 +289,79 @@ const Kanban = () => {
 
           <div className="lg:col-span-2">
             {selectedBoard ? (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex justify-between items-center">
-                  <div>
-                    <h2 className="text-xl font-semibold text-white">{selectedBoard.name}</h2>
-                    <p className="text-gray-400">{selectedBoard.description}</p>
+                  <div className="bg-gradient-to-r from-slate-800/80 to-slate-700/80 rounded-lg p-4 border border-slate-600">
+                    <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-purple-400" />
+                      {selectedBoard.name}
+                    </h2>
+                    {selectedBoard.description && (
+                      <p className="text-slate-400 mt-1">{selectedBoard.description}</p>
+                    )}
                   </div>
                   <Button 
                     onClick={() => setShowTaskForm(true)}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-[1.02] shadow-lg"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Nova Tarefa
                   </Button>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {statuses.map(status => (
-                    <div key={status.id} className="space-y-3">
-                      <div className={`${status.color} text-white p-2 rounded-lg text-center font-medium`}>
-                        {status.name}
+                    <div key={status.id} className="space-y-4">
+                      <div className={`bg-gradient-to-r ${status.color} text-white p-4 rounded-xl text-center font-semibold shadow-xl border border-slate-600/50`}>
+                        <div className="flex items-center justify-center gap-2">
+                          <Target className={`h-4 w-4 ${status.iconColor}`} />
+                          {status.name}
+                        </div>
+                        <div className="text-xs mt-1 opacity-80">
+                          {tasks.filter(task => task.status === status.id).length} tarefas
+                        </div>
                       </div>
-                      <div className="space-y-2">
+                      <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
                         {tasks
                           .filter(task => task.status === status.id)
                           .map(task => (
-                            <Card key={task.id} className="bg-gray-800 border-gray-700 cursor-pointer hover:bg-gray-750">
-                              <CardContent className="space-y-2 p-3">
+                            <Card key={task.id} className="bg-gradient-to-br from-slate-800/90 to-slate-700/90 border-slate-600/50 cursor-pointer hover:scale-[1.02] transition-all duration-300 shadow-xl backdrop-blur-sm">
+                              <CardContent className="space-y-3 p-4">
                                 <div className="flex justify-between items-start">
-                                  <h3 className="text-white font-semibold">{task.title}</h3>
-                                  <Badge className={priorities.find(p => p.value === task.priority)?.color || 'bg-gray-100 text-gray-800'}>
+                                  <h3 className="text-white font-semibold text-sm leading-tight">{task.title}</h3>
+                                  <Badge className={`${priorities.find(p => p.value === task.priority)?.color || 'bg-gray-500'} text-xs font-medium shadow-lg`}>
                                     {priorities.find(p => p.value === task.priority)?.label}
                                   </Badge>
                                 </div>
-                                <p className="text-gray-400 text-sm">{task.description}</p>
-                                <div className="flex justify-between items-center text-gray-500 text-xs">
+                                {task.description && (
+                                  <p className="text-slate-400 text-xs leading-relaxed">{task.description}</p>
+                                )}
+                                <div className="flex justify-between items-center text-slate-500 text-xs">
                                   <div className="flex items-center gap-1">
                                     <Calendar className="h-3 w-3" />
-                                    {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Sem data'}
+                                    {task.due_date ? new Date(task.due_date).toLocaleDateString('pt-BR') : 'Sem data'}
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <User className="h-3 w-3" />
-                                    {task.assigned_to || 'Ninguém'}
+                                    {task.assignee || 'Ninguém'}
                                   </div>
                                 </div>
-                                <div className="flex justify-end gap-2">
+                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <Button 
                                     onClick={() => setEditingTask(task)}
                                     variant="ghost"
                                     size="icon"
+                                    className="h-6 w-6 text-slate-400 hover:text-blue-400 hover:bg-blue-900/20"
                                   >
-                                    <Edit className="h-4 w-4" />
+                                    <Edit className="h-3 w-3" />
                                   </Button>
                                   <Button
                                     onClick={() => deleteTask(task.id)}
                                     variant="ghost"
                                     size="icon"
+                                    className="h-6 w-6 text-slate-400 hover:text-red-400 hover:bg-red-900/20"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <Trash2 className="h-3 w-3" />
                                   </Button>
                                 </div>
                               </CardContent>
@@ -321,9 +373,15 @@ const Kanban = () => {
                 </div>
               </div>
             ) : (
-              <Card className="bg-gray-900 border-gray-800">
-                <CardContent className="flex items-center justify-center h-64">
-                  <p className="text-gray-400">Selecione um quadro para ver as tarefas</p>
+              <Card className="bg-gradient-to-br from-slate-900/80 to-slate-800/80 border-slate-700/50 shadow-2xl backdrop-blur-sm">
+                <CardContent className="flex items-center justify-center h-96">
+                  <div className="text-center">
+                    <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-slate-700 to-slate-800 rounded-full flex items-center justify-center">
+                      <Target className="h-10 w-10 text-slate-400" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-slate-300 mb-2">Selecione um quadro</h3>
+                    <p className="text-slate-400">Escolha um quadro para visualizar e gerenciar suas tarefas</p>
+                  </div>
                 </CardContent>
               </Card>
             )}

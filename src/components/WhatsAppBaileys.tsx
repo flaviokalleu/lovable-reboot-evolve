@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { QrCode, Smartphone, CheckCircle, XCircle, RefreshCw, Wifi } from 'lucide-react';
+import { QrCode, Smartphone, CheckCircle, XCircle, RefreshCw, Wifi, Sparkles, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const WhatsAppBaileys = () => {
@@ -47,13 +46,11 @@ const WhatsAppBaileys = () => {
     setStatusMessage('Iniciando conexão real com Baileys...');
     
     try {
-      // Importação dinâmica do Baileys para evitar problemas de build
       const { default: makeWASocket, DisconnectReason, useMultiFileAuthState } = await import('@whiskeysockets/baileys');
       const QRCode = await import('qrcode');
       
       console.log('Baileys carregado, iniciando autenticação...');
       
-      // Usar autenticação multi-arquivo do Baileys
       const { state, saveCreds } = await useMultiFileAuthState('baileys_auth_info');
       
       console.log('Estado de autenticação criado, conectando...');
@@ -69,7 +66,6 @@ const WhatsAppBaileys = () => {
           info: console.log,
           warn: console.warn,
           error: console.error,
-          fatal: console.error
         }
       });
 
@@ -85,7 +81,6 @@ const WhatsAppBaileys = () => {
           console.log('QR Code recebido do Baileys:', qr);
           
           try {
-            // Gerar QR Code real do Baileys usando a biblioteca qrcode
             const qrDataURL = await QRCode.toDataURL(qr, {
               width: 300,
               margin: 2,
@@ -141,12 +136,10 @@ const WhatsAppBaileys = () => {
           setIsConnecting(false);
           setConnectionAttempts(0);
           
-          // Obter informações do número
           const phoneNumber = sock.user?.id?.split(':')[0] || 'Número não disponível';
           setConnectedPhone(phoneNumber);
           setStatusMessage(`Conectado via Baileys: ${phoneNumber}`);
           
-          // Salvar conexão no localStorage
           const connectionInfo = {
             isConnected: true,
             phoneNumber,
@@ -165,7 +158,6 @@ const WhatsAppBaileys = () => {
 
       sock.ev.on('creds.update', saveCreds);
       
-      // Listener real para mensagens recebidas
       sock.ev.on('messages.upsert', async (m) => {
         const messages = m.messages;
         
@@ -177,8 +169,6 @@ const WhatsAppBaileys = () => {
             
             if (messageText) {
               console.log(`Mensagem REAL recebida de ${from}: ${messageText}`);
-              
-              // Processar mensagem com IA
               await processMessageWithAI(from, messageText, sock);
             }
           }
@@ -212,7 +202,6 @@ const WhatsAppBaileys = () => {
         response = '🤖 Assistente financeiro ativo! Envie:\n• "Gasto R$ 50 com almoço"\n• "Recebi R$ 2000 salário"';
       }
       
-      // Enviar resposta REAL via Baileys
       await sock.sendMessage(from, { text: response });
       
       console.log(`Resposta enviada para ${from}: ${response}`);
@@ -257,52 +246,60 @@ const WhatsAppBaileys = () => {
 
   const getStatusBadge = () => {
     if (isConnected) {
-      return <Badge className="bg-green-100 text-green-800">Conectado via Baileys</Badge>;
+      return <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg">Conectado via Baileys</Badge>;
     }
     if (isConnecting) {
-      return <Badge className="bg-yellow-100 text-yellow-800">Conectando...</Badge>;
+      return <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg animate-pulse">Conectando...</Badge>;
     }
-    return <Badge className="bg-red-100 text-red-800">Desconectado</Badge>;
+    return <Badge className="bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg">Desconectado</Badge>;
   };
 
   return (
-    <Card className="bg-gray-900 border-gray-800">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-white">
-          <Wifi className="h-5 w-5" />
-          WhatsApp Real (Baileys)
-          {isConnected ? (
-            <CheckCircle className="h-5 w-5 text-green-400" />
-          ) : (
-            <XCircle className="h-5 w-5 text-red-400" />
-          )}
+    <Card className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border-slate-700/50 shadow-2xl backdrop-blur-sm">
+      <CardHeader className="bg-gradient-to-r from-emerald-900/30 to-teal-900/30 rounded-t-lg border-b border-slate-700/50">
+        <CardTitle className="flex items-center gap-3 text-white">
+          <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg">
+            <Wifi className="h-5 w-5" />
+          </div>
+          <div className="flex items-center gap-2">
+            WhatsApp Real (Baileys)
+            {isConnected ? (
+              <CheckCircle className="h-5 w-5 text-emerald-400 animate-pulse" />
+            ) : (
+              <XCircle className="h-5 w-5 text-red-400" />
+            )}
+            <Sparkles className="h-4 w-4 text-yellow-400 animate-pulse" />
+          </div>
         </CardTitle>
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-400">{statusMessage}</p>
+        <div className="flex items-center justify-between mt-2">
+          <p className="text-sm text-slate-300">{statusMessage}</p>
           {getStatusBadge()}
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6 p-6 bg-gradient-to-b from-slate-800/50 to-slate-900/50">
         {isConnected ? (
-          <div className="text-center space-y-4">
-            <div className="p-4 bg-green-900/50 rounded-lg border border-green-700">
-              <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-2" />
-              <p className="text-green-400 font-medium">WhatsApp Conectado!</p>
-              <p className="text-green-300 text-sm">
+          <div className="text-center space-y-6">
+            <div className="p-6 bg-gradient-to-br from-emerald-900/50 to-teal-900/50 rounded-xl border border-emerald-700/50 shadow-xl">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-8 w-8 text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-emerald-300 mb-2">WhatsApp Conectado!</h3>
+              <p className="text-emerald-200 font-medium mb-1">
                 📱 {connectedPhone || 'Carregando...'}
               </p>
-              <p className="text-green-300 text-sm mt-2">
+              <p className="text-emerald-200 text-sm mb-2">
                 ✅ Conexão real estabelecida via Baileys
               </p>
-              <p className="text-green-200 text-xs mt-1">
+              <div className="flex items-center justify-center gap-2 text-emerald-100 text-sm">
+                <Zap className="h-4 w-4 animate-pulse" />
                 Recebendo mensagens em tempo real
-              </p>
+              </div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button 
                 onClick={disconnect} 
                 variant="outline" 
-                className="flex-1 border-gray-700 text-white hover:bg-gray-800"
+                className="flex-1 border-slate-600 text-white hover:bg-slate-700 transition-all duration-300"
               >
                 Desconectar WhatsApp
               </Button>
@@ -310,40 +307,45 @@ const WhatsAppBaileys = () => {
                 onClick={refreshConnection} 
                 variant="outline" 
                 size="icon"
-                className="border-gray-700 text-white hover:bg-gray-800"
+                className="border-slate-600 text-white hover:bg-slate-700 transition-all duration-300"
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
           </div>
         ) : (
-          <div className="text-center space-y-4">
+          <div className="text-center space-y-6">
             {qrCode ? (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div className="flex justify-center">
-                  <img 
-                    src={qrCode} 
-                    alt="QR Code WhatsApp Real" 
-                    className="max-w-80 max-h-80 border border-gray-700 rounded-lg shadow-lg bg-white p-4"
-                  />
+                  <div className="p-4 bg-white rounded-xl shadow-2xl border-4 border-gradient-to-r from-purple-500 to-blue-500">
+                    <img 
+                      src={qrCode} 
+                      alt="QR Code WhatsApp Real" 
+                      className="max-w-80 max-h-80 rounded-lg"
+                    />
+                  </div>
                 </div>
-                <div className="p-4 bg-blue-900/50 rounded-lg border border-blue-700">
-                  <QrCode className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                  <p className="text-blue-400 font-medium">QR Code REAL do Baileys</p>
-                  <p className="text-blue-300 text-sm">
-                    1. Abra WhatsApp no celular<br/>
-                    2. Menu (⋮) → Aparelhos conectados<br/>
-                    3. Conectar aparelho → Escaneie este código
-                  </p>
-                  <p className="text-blue-200 text-xs mt-2 font-semibold">
-                    🔥 Este é um QR Code oficial gerado pelo Baileys!
-                  </p>
+                <div className="p-6 bg-gradient-to-br from-blue-900/50 to-purple-900/50 rounded-xl border border-blue-700/50 shadow-xl">
+                  <div className="w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <QrCode className="h-6 w-6 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-blue-300 mb-2">QR Code REAL do Baileys</h3>
+                  <div className="text-blue-200 text-sm space-y-1">
+                    <p>1. Abra WhatsApp no celular</p>
+                    <p>2. Menu (⋮) → Aparelhos conectados</p>
+                    <p>3. Conectar aparelho → Escaneie este código</p>
+                  </div>
+                  <div className="mt-4 flex items-center justify-center gap-2 text-yellow-300 text-sm font-semibold">
+                    <Sparkles className="h-4 w-4 animate-pulse" />
+                    QR Code oficial gerado pelo Baileys!
+                  </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <Button 
                     onClick={startBaileysConnection} 
                     variant="outline" 
-                    className="flex-1 border-gray-700 text-white hover:bg-gray-800"
+                    className="flex-1 border-slate-600 text-white hover:bg-slate-700 transition-all duration-300"
                     disabled={isConnecting}
                   >
                     {isConnecting ? 'Gerando...' : 'Gerar Novo QR'}
@@ -352,31 +354,34 @@ const WhatsAppBaileys = () => {
                     onClick={refreshConnection} 
                     variant="outline" 
                     size="icon"
-                    className="border-gray-700 text-white hover:bg-gray-800"
+                    className="border-slate-600 text-white hover:bg-slate-700 transition-all duration-300"
                   >
                     <RefreshCw className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-800 rounded-lg border border-gray-700">
-                  <Smartphone className="h-12 w-12 text-gray-500 mx-auto mb-2" />
-                  <p className="text-gray-400">WhatsApp não conectado</p>
-                  <p className="text-gray-500 text-sm mt-2">
+              <div className="space-y-6">
+                <div className="p-6 bg-gradient-to-br from-slate-800/80 to-slate-700/80 rounded-xl border border-slate-700/50 shadow-xl">
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-slate-600 to-slate-700 rounded-full flex items-center justify-center">
+                    <Smartphone className="h-8 w-8 text-slate-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-300 mb-2">WhatsApp não conectado</h3>
+                  <p className="text-slate-400 text-sm mb-3">
                     Conecte usando o Baileys para receber mensagens reais
                   </p>
                   {connectionAttempts > 0 && (
-                    <p className="text-yellow-400 text-xs mt-2">
+                    <div className="flex items-center justify-center gap-2 text-yellow-400 text-sm">
+                      <RefreshCw className="h-4 w-4 animate-spin" />
                       Tentativas: {connectionAttempts}/3
-                    </p>
+                    </div>
                   )}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <Button 
                     onClick={startBaileysConnection} 
                     disabled={isConnecting}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 shadow-lg"
                   >
                     {isConnecting ? (
                       <>
@@ -394,7 +399,7 @@ const WhatsAppBaileys = () => {
                     onClick={refreshConnection} 
                     variant="outline" 
                     size="icon"
-                    className="border-gray-700 text-white hover:bg-gray-800"
+                    className="border-slate-600 text-white hover:bg-slate-700 transition-all duration-300"
                   >
                     <RefreshCw className="h-4 w-4" />
                   </Button>
@@ -404,15 +409,32 @@ const WhatsAppBaileys = () => {
           </div>
         )}
 
-        {/* Informações técnicas */}
-        <div className="bg-green-950/30 p-4 rounded-lg border border-green-800">
-          <h4 className="font-semibold text-green-400 mb-2">✅ Baileys Real Integration:</h4>
-          <ul className="text-sm text-green-300 space-y-1">
-            <li>• QR Code oficial gerado pelo @whiskeysockets/baileys</li>
-            <li>• Autenticação multi-arquivo persistente</li>
-            <li>• Reconexão automática em caso de desconexão</li>
-            <li>• Processamento real de mensagens recebidas</li>
-            <li>• Logs detalhados para debug e monitoramento</li>
+        <div className="bg-gradient-to-br from-emerald-950/30 to-teal-950/30 p-6 rounded-xl border border-emerald-800/50 shadow-xl">
+          <h4 className="font-semibold text-emerald-300 mb-3 flex items-center gap-2">
+            <Zap className="h-5 w-5 animate-pulse" />
+            ✅ Baileys Real Integration
+          </h4>
+          <ul className="text-sm text-emerald-200 space-y-2">
+            <li className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              QR Code oficial gerado pelo @whiskeysockets/baileys
+            </li>
+            <li className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              Autenticação multi-arquivo persistente
+            </li>
+            <li className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              Reconexão automática em caso de desconexão
+            </li>
+            <li className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              Processamento real de mensagens recebidas
+            </li>
+            <li className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
+              Logs detalhados para debug e monitoramento
+            </li>
           </ul>
         </div>
       </CardContent>
