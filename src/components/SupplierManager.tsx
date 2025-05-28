@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,7 +84,11 @@ const SupplierManager = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data;
+      // Type cast the data to match our interface
+      return data?.map(supplier => ({
+        ...supplier,
+        supplier_type: supplier.supplier_type as 'individual' | 'business'
+      })) || [];
     },
     enabled: !!user
   });

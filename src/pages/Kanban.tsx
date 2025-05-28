@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -100,7 +99,12 @@ const Kanban = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setTasks(data || []);
+      // Type cast the priority field to match our interface
+      const typedTasks = data?.map(task => ({
+        ...task,
+        priority: task.priority as 'baixa' | 'media' | 'alta' | 'urgente'
+      })) || [];
+      setTasks(typedTasks);
     } catch (error: any) {
       toast({
         title: 'Erro ao carregar tarefas',
