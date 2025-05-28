@@ -85,10 +85,10 @@ const DashboardStats = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
         {[...Array(4)].map((_, i) => (
           <Card key={i} className="border-slate-800 bg-slate-900/50">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="animate-pulse">
                 <div className="h-4 bg-slate-700 rounded w-24 mb-2"></div>
                 <div className="h-8 bg-slate-700 rounded w-32"></div>
@@ -101,86 +101,89 @@ const DashboardStats = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
       {/* Saldo Atual */}
       <Card className="border-slate-800 bg-gradient-to-br from-slate-900 to-slate-800/50 hover:shadow-lg transition-all duration-300">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-sm font-medium text-slate-300">Saldo Atual</CardTitle>
-          <div className="p-2 bg-green-500/10 rounded-lg">
-            <DollarSign className="h-5 w-5 text-green-400" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 p-4 sm:p-6">
+          <CardTitle className="text-xs sm:text-sm font-medium text-slate-300">Saldo Atual</CardTitle>
+          <div className="p-1.5 sm:p-2 bg-green-500/10 rounded-lg">
+            <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-white mb-2">
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1 sm:mb-2">
             R$ {stats?.currentBalance?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
           </div>
-          <div className="flex items-center text-sm">
+          <div className="flex items-center text-xs sm:text-sm">
             {stats?.balanceTrend >= 0 ? (
-              <TrendingUp className="h-4 w-4 text-green-400 mr-1" />
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-400 mr-1" />
             ) : (
-              <TrendingDown className="h-4 w-4 text-red-400 mr-1" />
+              <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-400 mr-1" />
             )}
             <span className={stats?.balanceTrend >= 0 ? 'text-green-400' : 'text-red-400'}>
               {Math.abs(stats?.balanceTrend || 0).toFixed(1)}%
             </span>
-            <span className="text-slate-400 ml-1">vs mês anterior</span>
+            <span className="text-slate-400 ml-1 hidden sm:inline">vs mês anterior</span>
+            <span className="text-slate-400 ml-1 sm:hidden">vs anterior</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Receitas */}
       <Card className="border-slate-800 bg-gradient-to-br from-slate-900 to-slate-800/50 hover:shadow-lg transition-all duration-300">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-sm font-medium text-slate-300">Receitas</CardTitle>
-          <div className="p-2 bg-blue-500/10 rounded-lg">
-            <TrendingUp className="h-5 w-5 text-blue-400" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 p-4 sm:p-6">
+          <CardTitle className="text-xs sm:text-sm font-medium text-slate-300">Receitas</CardTitle>
+          <div className="p-1.5 sm:p-2 bg-blue-500/10 rounded-lg">
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-white mb-2">
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1 sm:mb-2">
             R$ {stats?.totalIncome?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
           </div>
-          <p className="text-sm text-slate-400">Total acumulado</p>
+          <p className="text-xs sm:text-sm text-slate-400">Total acumulado</p>
         </CardContent>
       </Card>
 
       {/* Despesas */}
       <Card className="border-slate-800 bg-gradient-to-br from-slate-900 to-slate-800/50 hover:shadow-lg transition-all duration-300">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-sm font-medium text-slate-300">Despesas</CardTitle>
-          <div className="p-2 bg-red-500/10 rounded-lg">
-            <CreditCard className="h-5 w-5 text-red-400" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 p-4 sm:p-6">
+          <CardTitle className="text-xs sm:text-sm font-medium text-slate-300">Despesas</CardTitle>
+          <div className="p-1.5 sm:p-2 bg-red-500/10 rounded-lg">
+            <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-red-400" />
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-white mb-2">
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1 sm:mb-2">
             R$ {stats?.totalExpenses?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
           </div>
-          <div className="flex items-center text-sm">
-            <Target className="h-4 w-4 text-orange-400 mr-1" />
+          <div className="flex items-center text-xs sm:text-sm">
+            <Target className="h-3 w-3 sm:h-4 sm:w-4 text-orange-400 mr-1" />
             <span className="text-orange-400">
               {stats?.budgetUsed?.toFixed(1) || 0}%
             </span>
-            <span className="text-slate-400 ml-1">do orçamento</span>
+            <span className="text-slate-400 ml-1 hidden sm:inline">do orçamento</span>
+            <span className="text-slate-400 ml-1 sm:hidden">orçamento</span>
           </div>
         </CardContent>
       </Card>
 
       {/* Contas Pendentes */}
       <Card className="border-slate-800 bg-gradient-to-br from-slate-900 to-slate-800/50 hover:shadow-lg transition-all duration-300">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="text-sm font-medium text-slate-300">Pendências</CardTitle>
-          <div className="p-2 bg-yellow-500/10 rounded-lg">
-            <AlertTriangle className="h-5 w-5 text-yellow-400" />
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 sm:pb-3 p-4 sm:p-6">
+          <CardTitle className="text-xs sm:text-sm font-medium text-slate-300">Pendências</CardTitle>
+          <div className="p-1.5 sm:p-2 bg-yellow-500/10 rounded-lg">
+            <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="text-3xl font-bold text-white mb-2">
+        <CardContent className="p-4 sm:p-6 pt-0">
+          <div className="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1 sm:mb-2">
             R$ {stats?.pendingReceivables?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
           </div>
-          <div className="flex items-center text-sm">
+          <div className="flex items-center text-xs sm:text-sm">
             <span className="text-red-400 font-medium">{stats?.overdueBills || 0}</span>
-            <span className="text-slate-400 ml-1">contas vencidas</span>
+            <span className="text-slate-400 ml-1 hidden sm:inline">contas vencidas</span>
+            <span className="text-slate-400 ml-1 sm:hidden">vencidas</span>
           </div>
         </CardContent>
       </Card>

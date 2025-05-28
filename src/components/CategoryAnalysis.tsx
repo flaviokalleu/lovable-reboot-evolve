@@ -69,12 +69,12 @@ const CategoryAnalysis = () => {
       const lastMonthTotals = calculateCategoryTotals(lastMonthTransactions);
 
       // Calcular total geral deste mês
-      const totalThisMonth = Object.values(thisMonthTotals).reduce((sum: number, amount: any) => sum + amount, 0);
+      const totalThisMonth = Object.values(thisMonthTotals).reduce((sum: number, amount: any) => sum + Number(amount), 0);
 
       // Criar análise por categoria
       const categoryAnalysis = Object.keys({...thisMonthTotals, ...lastMonthTotals}).map(category => {
-        const thisMonthAmount = thisMonthTotals[category] || 0;
-        const lastMonthAmount = lastMonthTotals[category] || 0;
+        const thisMonthAmount = Number(thisMonthTotals[category]) || 0;
+        const lastMonthAmount = Number(lastMonthTotals[category]) || 0;
         const percentage = totalThisMonth > 0 ? (thisMonthAmount / totalThisMonth) * 100 : 0;
         const trend = lastMonthAmount > 0 ? ((thisMonthAmount - lastMonthAmount) / lastMonthAmount) * 100 : 0;
 
