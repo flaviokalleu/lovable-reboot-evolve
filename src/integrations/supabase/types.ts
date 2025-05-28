@@ -9,6 +9,132 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      accounts_payable: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          description: string
+          due_date: string
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          payment_date: string | null
+          status: Database["public"]["Enums"]["account_status"] | null
+          supplier_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          description: string
+          due_date: string
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          status?: Database["public"]["Enums"]["account_status"] | null
+          supplier_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          description?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          status?: Database["public"]["Enums"]["account_status"] | null
+          supplier_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_payable_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_payable_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounts_receivable: {
+        Row: {
+          amount: number
+          company_id: string
+          created_at: string
+          customer_id: string | null
+          description: string
+          due_date: string
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          payment_date: string | null
+          status: Database["public"]["Enums"]["account_status"] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          company_id: string
+          created_at?: string
+          customer_id?: string | null
+          description: string
+          due_date: string
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          status?: Database["public"]["Enums"]["account_status"] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string
+          created_at?: string
+          customer_id?: string | null
+          description?: string
+          due_date?: string
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          payment_date?: string | null
+          status?: Database["public"]["Enums"]["account_status"] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_receivable_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accounts_receivable_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_analysis: {
         Row: {
           analysis_type: string
@@ -40,6 +166,152 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_accounts: {
+        Row: {
+          account_number: string | null
+          account_type: string | null
+          agency: string | null
+          bank_name: string | null
+          company_id: string
+          created_at: string
+          current_balance: number | null
+          id: string
+          initial_balance: number | null
+          is_active: boolean | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_number?: string | null
+          account_type?: string | null
+          agency?: string | null
+          bank_name?: string | null
+          company_id: string
+          created_at?: string
+          current_balance?: number | null
+          id?: string
+          initial_balance?: number | null
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_number?: string | null
+          account_type?: string | null
+          agency?: string | null
+          bank_name?: string | null
+          company_id?: string
+          created_at?: string
+          current_balance?: number | null
+          id?: string
+          initial_balance?: number | null
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_movements: {
+        Row: {
+          account_payable_id: string | null
+          account_receivable_id: string | null
+          amount: number
+          balance_after: number
+          bank_account_id: string
+          company_id: string
+          created_at: string
+          description: string
+          id: string
+          imported_from_ofx: boolean | null
+          movement_type: string
+          reference_date: string
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_payable_id?: string | null
+          account_receivable_id?: string | null
+          amount: number
+          balance_after: number
+          bank_account_id: string
+          company_id: string
+          created_at?: string
+          description: string
+          id?: string
+          imported_from_ofx?: boolean | null
+          movement_type: string
+          reference_date: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_payable_id?: string | null
+          account_receivable_id?: string | null
+          amount?: number
+          balance_after?: number
+          bank_account_id?: string
+          company_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          imported_from_ofx?: boolean | null
+          movement_type?: string
+          reference_date?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_movements_account_payable_id_fkey"
+            columns: ["account_payable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_payable"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_movements_account_receivable_id_fkey"
+            columns: ["account_receivable_id"]
+            isOneToOne: false
+            referencedRelation: "accounts_receivable"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_movements_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_movements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bank_movements_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -112,6 +384,57 @@ export type Database = {
           name?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          address: string | null
+          city: string | null
+          cnpj: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          name: string
+          phone: string | null
+          state: string | null
+          updated_at: string
+          user_id: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          name?: string
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id?: string
+          zip_code?: string | null
         }
         Relationships: []
       }
@@ -189,6 +512,171 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      customers: {
+        Row: {
+          address: string | null
+          city: string | null
+          company_id: string
+          created_at: string
+          credit_limit: number | null
+          customer_type: string | null
+          document: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          phone: string | null
+          state: string | null
+          updated_at: string
+          user_id: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company_id: string
+          created_at?: string
+          credit_limit?: number | null
+          customer_type?: string | null
+          document?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company_id?: string
+          created_at?: string
+          credit_limit?: number | null
+          customer_type?: string | null
+          document?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          state?: string | null
+          updated_at?: string
+          user_id?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_tasks: {
+        Row: {
+          assigned_to: string | null
+          company_id: string
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          priority: string | null
+          status: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          company_id: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          company_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          priority?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_tasks_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_alerts: {
+        Row: {
+          alert_type: string
+          company_id: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          severity: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          alert_type: string
+          company_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          severity?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          severity?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_alerts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       kanban_boards: {
         Row: {
@@ -273,6 +761,60 @@ export type Database = {
           },
         ]
       }
+      ofx_imports: {
+        Row: {
+          bank_account_id: string
+          company_id: string
+          created_at: string
+          error_message: string | null
+          file_name: string
+          id: string
+          import_date: string
+          status: string | null
+          total_transactions: number | null
+          user_id: string
+        }
+        Insert: {
+          bank_account_id: string
+          company_id: string
+          created_at?: string
+          error_message?: string | null
+          file_name: string
+          id?: string
+          import_date?: string
+          status?: string | null
+          total_transactions?: number | null
+          user_id: string
+        }
+        Update: {
+          bank_account_id?: string
+          company_id?: string
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          id?: string
+          import_date?: string
+          status?: string | null
+          total_transactions?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ofx_imports_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ofx_imports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -321,15 +863,87 @@ export type Database = {
         }
         Relationships: []
       }
+      suppliers: {
+        Row: {
+          address: string | null
+          city: string | null
+          company_id: string
+          created_at: string
+          document: string | null
+          email: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          payment_terms: string | null
+          phone: string | null
+          state: string | null
+          supplier_type: string | null
+          updated_at: string
+          user_id: string
+          zip_code: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          company_id: string
+          created_at?: string
+          document?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          state?: string | null
+          supplier_type?: string | null
+          updated_at?: string
+          user_id: string
+          zip_code?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          company_id?: string
+          created_at?: string
+          document?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          state?: string | null
+          supplier_type?: string | null
+          updated_at?: string
+          user_id?: string
+          zip_code?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
+          bank_account_id: string | null
           category: Database["public"]["Enums"]["transaction_category"]
+          company_id: string | null
           created_at: string | null
+          customer_id: string | null
           description: string | null
           id: string
           processed_by_ai: boolean | null
           receipt_url: string | null
+          supplier_id: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string | null
           user_id: string
@@ -337,12 +951,16 @@ export type Database = {
         }
         Insert: {
           amount: number
+          bank_account_id?: string | null
           category: Database["public"]["Enums"]["transaction_category"]
+          company_id?: string | null
           created_at?: string | null
+          customer_id?: string | null
           description?: string | null
           id?: string
           processed_by_ai?: boolean | null
           receipt_url?: string | null
+          supplier_id?: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string | null
           user_id: string
@@ -350,18 +968,50 @@ export type Database = {
         }
         Update: {
           amount?: number
+          bank_account_id?: string | null
           category?: Database["public"]["Enums"]["transaction_category"]
+          company_id?: string | null
           created_at?: string | null
+          customer_id?: string | null
           description?: string | null
           id?: string
           processed_by_ai?: boolean | null
           receipt_url?: string | null
+          supplier_id?: string | null
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string | null
           user_id?: string
           whatsapp_message_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "bank_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_user_id_fkey"
             columns: ["user_id"]
@@ -456,6 +1106,7 @@ export type Database = {
       }
     }
     Enums: {
+      account_status: "pending" | "paid" | "overdue" | "cancelled"
       subscription_status: "active" | "inactive" | "pending" | "expired"
       transaction_category:
         | "food"
@@ -585,6 +1236,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      account_status: ["pending", "paid", "overdue", "cancelled"],
       subscription_status: ["active", "inactive", "pending", "expired"],
       transaction_category: [
         "food",
