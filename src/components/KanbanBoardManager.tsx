@@ -38,7 +38,7 @@ const KanbanBoardManager: React.FC<KanbanBoardManagerProps> = ({ onBoardSelect, 
     queryKey: ['kanban-boards', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('kanban_boards')
+        .from('kanban_boards' as any)
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
@@ -52,7 +52,7 @@ const KanbanBoardManager: React.FC<KanbanBoardManagerProps> = ({ onBoardSelect, 
   const createBoardMutation = useMutation({
     mutationFn: async (board: { name: string; description: string; color: string }) => {
       const { data, error } = await supabase
-        .from('kanban_boards')
+        .from('kanban_boards' as any)
         .insert({
           name: board.name,
           description: board.description,
@@ -80,7 +80,7 @@ const KanbanBoardManager: React.FC<KanbanBoardManagerProps> = ({ onBoardSelect, 
   const updateBoardMutation = useMutation({
     mutationFn: async (board: KanbanBoard) => {
       const { data, error } = await supabase
-        .from('kanban_boards')
+        .from('kanban_boards' as any)
         .update({
           name: board.name,
           description: board.description,
@@ -110,7 +110,7 @@ const KanbanBoardManager: React.FC<KanbanBoardManagerProps> = ({ onBoardSelect, 
   const deleteBoardMutation = useMutation({
     mutationFn: async (boardId: string) => {
       const { error } = await supabase
-        .from('kanban_boards')
+        .from('kanban_boards' as any)
         .delete()
         .eq('id', boardId);
       
@@ -173,7 +173,8 @@ const KanbanBoardManager: React.FC<KanbanBoardManagerProps> = ({ onBoardSelect, 
           <DialogTrigger asChild>
             <Button 
               onClick={() => {
-                resetForm();
+                setNewBoard({ name: '', description: '', color: '#3b82f6' });
+                setEditingBoard(null);
                 setIsDialogOpen(true);
               }}
               size="sm"
@@ -228,13 +229,31 @@ const KanbanBoardManager: React.FC<KanbanBoardManagerProps> = ({ onBoardSelect, 
               </div>
               <div className="flex gap-2">
                 <Button 
-                  onClick={editingBoard ? handleUpdateBoard : handleCreateBoard} 
+                  onClick={() => {
+                    if (editingBoard) {
+                      if (editingBoard.name.trim()) {
+                        updateBoardMutation.mutate(editingBoard);
+                      }
+                    } else {
+                      if (newBoard.name.trim()) {
+                        createBoardMutation.mutate(newBoard);
+                      }
+                    }
+                  }}
                   disabled={createBoardMutation.isPending || updateBoardMutation.isPending}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   {editingBoard ? 'Salvar' : 'Criar'}
                 </Button>
-                <Button variant="outline" onClick={resetForm} className="border-gray-700 text-white hover:bg-gray-800">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setNewBoard({ name: '', description: '', color: '#3b82f6' });
+                    setEditingBoard(null);
+                    setIsDialogOpen(false);
+                  }} 
+                  className="border-gray-700 text-white hover:bg-gray-800"
+                >
                   Cancelar
                 </Button>
               </div>
@@ -270,7 +289,8 @@ const KanbanBoardManager: React.FC<KanbanBoardManagerProps> = ({ onBoardSelect, 
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleEdit(board);
+                        setEditingBoard(board);
+                        setIsDialogOpen(true);
                       }}
                       className="text-gray-400 hover:text-white hover:bg-gray-700"
                     >

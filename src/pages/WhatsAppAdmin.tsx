@@ -3,6 +3,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import WhatsAppBaileys from '@/components/WhatsAppBaileys';
 import QRCodeGenerator from '@/components/QRCodeGenerator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Settings, Zap } from 'lucide-react';
@@ -12,7 +13,7 @@ const WhatsAppAdmin = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -35,69 +36,70 @@ const WhatsAppAdmin = () => {
             <MessageSquare className="h-8 w-8" />
             Administração WhatsApp
           </h1>
-          <p className="text-green-100">Configure e gerencie a integração com WhatsApp</p>
+          <p className="text-green-100">Configure e gerencie a integração com WhatsApp usando Baileys</p>
         </div>
 
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* QR Code Generator */}
-          <div className="lg:col-span-2">
+          {/* Baileys Integration */}
+          <div className="lg:col-span-2 space-y-6">
+            <WhatsAppBaileys />
             <QRCodeGenerator />
           </div>
 
           {/* Info Cards */}
           <div className="space-y-6">
-            <Card>
+            <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-white">
                   <Zap className="h-5 w-5" />
-                  Recursos Ativos
+                  Recursos Baileys
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Processamento IA</span>
-                  <span className="text-green-600 font-semibold">Ativo</span>
+                  <span className="text-sm text-gray-300">Conexão Direta</span>
+                  <span className="text-green-400 font-semibold">Ativo</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Auto-resposta</span>
-                  <span className="text-green-600 font-semibold">Ativo</span>
+                  <span className="text-sm text-gray-300">QR Code Gerado</span>
+                  <span className="text-green-400 font-semibold">Sim</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Sync Transações</span>
-                  <span className="text-green-600 font-semibold">Ativo</span>
+                  <span className="text-sm text-gray-300">Auto-resposta</span>
+                  <span className="text-green-400 font-semibold">Ativo</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Backup Automático</span>
-                  <span className="text-blue-600 font-semibold">Habilitado</span>
+                  <span className="text-sm text-gray-300">Processamento IA</span>
+                  <span className="text-blue-400 font-semibold">Habilitado</span>
                 </div>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-gray-900 border-gray-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-white">
                   <Settings className="h-5 w-5" />
-                  Sistema Melhorado
+                  Baileys vs WPPConnect
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <h4 className="font-semibold text-green-800 text-sm">✅ Novo Sistema</h4>
-                  <p className="text-green-700 text-xs">
-                    Sistema independente sem banco de dados, mais rápido e confiável.
+                <div className="p-3 bg-green-900/30 rounded-lg border border-green-800">
+                  <h4 className="font-semibold text-green-400 text-sm">✅ Baileys</h4>
+                  <p className="text-green-300 text-xs">
+                    Biblioteca oficial, mais estável e confiável.
                   </p>
                 </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 text-sm">🔧 Automático</h4>
-                  <p className="text-blue-700 text-xs">
-                    Conexão e autenticação automáticas em 15 segundos.
+                <div className="p-3 bg-blue-900/30 rounded-lg border border-blue-800">
+                  <h4 className="font-semibold text-blue-400 text-sm">🔧 QR Code Nativo</h4>
+                  <p className="text-blue-300 text-xs">
+                    Geração de QR Code integrada no frontend.
                   </p>
                 </div>
-                <div className="p-3 bg-purple-50 rounded-lg">
-                  <h4 className="font-semibold text-purple-800 text-sm">🚀 Performance</h4>
-                  <p className="text-purple-700 text-xs">
-                    Processamento local sem latência de servidor.
+                <div className="p-3 bg-purple-900/30 rounded-lg border border-purple-800">
+                  <h4 className="font-semibold text-purple-400 text-sm">🚀 Performance</h4>
+                  <p className="text-purple-300 text-xs">
+                    Conexão direta sem intermediários.
                   </p>
                 </div>
               </CardContent>

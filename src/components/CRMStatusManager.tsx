@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Plus, Trash2, Edit2, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -32,7 +30,7 @@ const CRMStatusManager = () => {
     queryKey: ['crm-status', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('crm_status')
+        .from('crm_status' as any)
         .select('*')
         .eq('user_id', user?.id)
         .order('order_index');
@@ -47,7 +45,7 @@ const CRMStatusManager = () => {
     mutationFn: async (status: { name: string; color: string }) => {
       const maxOrder = statuses?.length ? Math.max(...statuses.map(s => s.order_index)) : 0;
       const { data, error } = await supabase
-        .from('crm_status')
+        .from('crm_status' as any)
         .insert({
           name: status.name,
           color: status.color,
@@ -74,7 +72,7 @@ const CRMStatusManager = () => {
   const updateStatusMutation = useMutation({
     mutationFn: async (status: CRMStatus) => {
       const { data, error } = await supabase
-        .from('crm_status')
+        .from('crm_status' as any)
         .update({
           name: status.name,
           color: status.color,
@@ -100,7 +98,7 @@ const CRMStatusManager = () => {
   const deleteStatusMutation = useMutation({
     mutationFn: async (statusId: string) => {
       const { error } = await supabase
-        .from('crm_status')
+        .from('crm_status' as any)
         .delete()
         .eq('id', statusId);
       
@@ -168,7 +166,8 @@ const CRMStatusManager = () => {
           <DialogTrigger asChild>
             <Button 
               onClick={() => {
-                resetForm();
+                setNewStatus({ name: '', color: '#3b82f6' });
+                setEditingStatus(null);
                 setIsDialogOpen(true);
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -197,27 +196,43 @@ const CRMStatusManager = () => {
               </div>
               <div>
                 <Label htmlFor="color" className="text-white">Cor</Label>
-                <div className="flex gap-2">
-                  <input
-                    type="color"
-                    value={editingStatus ? editingStatus.color : newStatus.color}
-                    onChange={(e) => editingStatus 
-                      ? setEditingStatus({ ...editingStatus, color: e.target.value })
-                      : setNewStatus({ ...newStatus, color: e.target.value })
-                    }
-                    className="w-12 h-10 rounded border cursor-pointer"
-                  />
-                </div>
+                <input
+                  type="color"
+                  value={editingStatus ? editingStatus.color : newStatus.color}
+                  onChange={(e) => editingStatus 
+                    ? setEditingStatus({ ...editingStatus, color: e.target.value })
+                    : setNewStatus({ ...newStatus, color: e.target.value })
+                  }
+                  className="w-12 h-10 rounded border cursor-pointer"
+                />
               </div>
               <div className="flex gap-2">
                 <Button 
-                  onClick={editingStatus ? handleUpdateStatus : handleCreateStatus} 
+                  onClick={() => {
+                    if (editingStatus) {
+                      if (editingStatus.name.trim()) {
+                        updateStatusMutation.mutate(editingStatus);
+                      }
+                    } else {
+                      if (newStatus.name.trim()) {
+                        createStatusMutation.mutate(newStatus);
+                      }
+                    }
+                  }}
                   disabled={createStatusMutation.isPending || updateStatusMutation.isPending}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
                   {editingStatus ? 'Salvar' : 'Criar'}
                 </Button>
-                <Button variant="outline" onClick={resetForm} className="border-gray-700 text-white hover:bg-gray-800">
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setNewStatus({ name: '', color: '#3b82f6' });
+                    setEditingStatus(null);
+                    setIsDialogOpen(false);
+                  }} 
+                  className="border-gray-700 text-white hover:bg-gray-800"
+                >
                   Cancelar
                 </Button>
               </div>
@@ -245,7 +260,10 @@ const CRMStatusManager = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleEdit(status)}
+                      onClick={() => {
+                        setEditingStatus(status);
+                        setIsDialogOpen(true);
+                      }}
                       className="text-gray-400 hover:text-white hover:bg-gray-700"
                     >
                       <Edit2 className="h-3 w-3" />
