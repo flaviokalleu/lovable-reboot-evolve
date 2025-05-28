@@ -11,141 +11,103 @@ const Index = () => {
   const features = [
     {
       icon: DollarSign,
-      title: 'Controle Financeiro Total',
-      description: 'Gerencie receitas, despesas e investimentos com precisão absoluta e categorização inteligente',
+      title: 'Controle Financeiro Completo',
+      description: 'Gerencie receitas, despesas e investimentos com categorização automática e relatórios em tempo real',
       color: 'text-emerald-400',
       bgColor: 'bg-emerald-500/10'
     },
     {
       icon: Brain,
-      title: 'IA Avançada Gemini',
-      description: 'Análises automáticas, insights personalizados e previsões baseadas em machine learning',
+      title: 'IA Financeira Avançada',
+      description: 'Análises preditivas, insights personalizados e recomendações automatizadas para otimização financeira',
       color: 'text-blue-400',
       bgColor: 'bg-blue-500/10'
     },
     {
       icon: Users,
-      title: 'CRM Integrado',
-      description: 'Gerencie clientes, leads, contratos e relacionamentos comerciais em um só lugar',
+      title: 'CRM Empresarial',
+      description: 'Gestão completa de clientes, fornecedores e leads com automação de vendas integrada',
       color: 'text-purple-400',
       bgColor: 'bg-purple-500/10'
     },
     {
       icon: Kanban,
-      title: 'Kanban Board',
-      description: 'Organize projetos financeiros, tarefas e metas com metodologia ágil visual',
+      title: 'Gestão de Projetos',
+      description: 'Kanban boards para organizar tarefas financeiras, metas e projetos empresariais',
       color: 'text-orange-400',
       bgColor: 'bg-orange-500/10'
     },
     {
       icon: BarChart3,
-      title: 'Relatórios Avançados',
-      description: 'Dashboards interativos com filtros personalizáveis e exportação completa',
+      title: 'Relatórios Inteligentes',
+      description: 'Dashboards interativos com filtros avançados, exportação e análises comparativas',
       color: 'text-cyan-400',
       bgColor: 'bg-cyan-500/10'
     },
     {
       icon: MessageSquare,
-      title: 'WhatsApp & IA',
-      description: 'Integração nativa com WhatsApp para automação e atendimento inteligente',
+      title: 'WhatsApp Business',
+      description: 'Automação comercial via WhatsApp com respostas inteligentes e gestão de leads',
       color: 'text-green-400',
       bgColor: 'bg-green-500/10'
-    },
-    {
-      icon: Smartphone,
-      title: 'Mobile First',
-      description: 'Interface responsiva otimizada para dispositivos móveis e tablets',
-      color: 'text-pink-400',
-      bgColor: 'bg-pink-500/10'
-    },
-    {
-      icon: Shield,
-      title: 'Segurança Máxima',
-      description: 'Criptografia end-to-end, autenticação multifator e conformidade LGPD',
-      color: 'text-red-400',
-      bgColor: 'bg-red-500/10'
     }
   ];
 
   const testimonials = [
     {
-      name: "Maria Silva",
+      name: "Carlos Silva",
       role: "CEO, TechStart",
-      content: "Revolucionou minha gestão financeira. A IA do Gemini é impressionante, consegui economizar 40% em apenas 3 meses!",
+      content: "Revolucionou nossa gestão financeira. Reduzimos custos em 35% e aumentamos a eficiência operacional significativamente.",
       rating: 5,
-      avatar: "MS",
-      company: "Startup de Tecnologia"
+      avatar: "CS",
+      company: "Startup Tecnológica"
     },
     {
-      name: "João Santos",
-      role: "Freelancer",
-      content: "O CRM integrado me ajudou a organizar todos os clientes e aumentar minha receita em 60%. Sistema completo e intuitivo.",
+      name: "Ana Rodrigues",
+      role: "CFO, InnovateCorp",
+      content: "A IA financeira é impressionante. Previu tendências que nos ajudaram a tomar decisões estratégicas certeiras.",
       rating: 5,
-      avatar: "JS",
-      company: "Designer & Desenvolvedor"
+      avatar: "AR",
+      company: "Corporação Inovadora"
     },
     {
-      name: "Ana Costa",
-      role: "Contadora",
-      content: "Os relatórios são incríveis, economizo 15 horas por semana. A integração com WhatsApp facilitou muito o atendimento.",
+      name: "Pedro Santos",
+      role: "Contador",
+      content: "Economizo 20 horas semanais com os relatórios automatizados. Interface intuitiva e dados precisos.",
       rating: 5,
-      avatar: "AC",
-      company: "Escritório de Contabilidade"
-    },
-    {
-      name: "Pedro Oliveira",
-      role: "E-commerce",
-      content: "Kanban financeiro me ajudou a organizar investimentos. Dashboard em tempo real mudou como vejo meu negócio.",
-      rating: 5,
-      avatar: "PO",
-      company: "Loja Online"
-    },
-    {
-      name: "Carla Mendes",
-      role: "Consultora",
-      content: "Suporte 24/7 excepcional. IA previu tendências que me salvaram de prejuízos. Recomendo para todos!",
-      rating: 5,
-      avatar: "CM",
-      company: "Consultoria Empresarial"
-    },
-    {
-      name: "Rafael Torres",
-      role: "Investidor",
-      content: "Melhor plataforma financeira que já usei. Análises preditivas me ajudaram a dobrar meus investimentos.",
-      rating: 5,
-      avatar: "RT",
-      company: "Gestor de Investimentos"
+      avatar: "PS",
+      company: "Escritório Contábil"
     }
   ];
 
   const plans = [
     {
-      name: "Starter",
-      price: "R$ 29",
+      name: "Essencial",
+      price: "R$ 49",
       period: "/mês",
-      description: "Perfeito para freelancers e pequenos negócios",
+      description: "Para pequenos negócios e freelancers",
       features: [
-        "Até 100 transações/mês",
+        "Até 500 transações/mês",
         "3 contas bancárias",
         "Relatórios básicos",
-        "CRM básico (50 contatos)",
-        "Kanban (5 projetos)",
-        "Suporte por email"
+        "CRM básico (100 contatos)",
+        "Kanban (3 projetos)",
+        "Suporte via email"
       ],
       highlighted: false
     },
     {
-      name: "Professional",
-      price: "R$ 79",
+      name: "Profissional",
+      price: "R$ 149",
       period: "/mês",
-      description: "Ideal para empresas em crescimento",
+      description: "Para empresas em crescimento",
       features: [
         "Transações ilimitadas",
         "Contas ilimitadas",
-        "IA Gemini completa",
+        "IA financeira completa",
         "CRM avançado (ilimitado)",
         "Kanban ilimitado",
-        "WhatsApp integrado",
+        "WhatsApp Business",
         "Relatórios avançados",
         "API completa",
         "Suporte prioritário"
@@ -154,17 +116,17 @@ const Index = () => {
     },
     {
       name: "Enterprise",
-      price: "R$ 199",
+      price: "R$ 399",
       period: "/mês",
-      description: "Para grandes empresas e corporações",
+      description: "Para grandes corporações",
       features: [
-        "Tudo do Professional",
-        "Multi-usuários (ilimitado)",
-        "White label",
+        "Tudo do Profissional",
+        "Multi-usuários ilimitados",
+        "Customização completa",
         "Servidor dedicado",
-        "Integração customizada",
+        "Integrações personalizadas",
         "Consultoria especializada",
-        "SLA garantido",
+        "SLA garantido 99.9%",
         "Suporte 24/7"
       ],
       highlighted: false
@@ -172,54 +134,31 @@ const Index = () => {
   ];
 
   const stats = [
-    { value: "50K+", label: "Usuários Ativos" },
-    { value: "R$ 2B+", label: "Transações Processadas" },
-    { value: "99.9%", label: "Uptime Garantido" },
-    { value: "4.9/5", label: "Avaliação Média" }
-  ];
-
-  const faqs = [
-    {
-      question: "Como funciona a IA financeira?",
-      answer: "Nossa IA usa o Google Gemini para analisar seus padrões financeiros, identificar oportunidades de economia, prever tendências e sugerir investimentos personalizados baseados no seu perfil de risco."
-    },
-    {
-      question: "É seguro conectar minhas contas bancárias?",
-      answer: "Sim, utilizamos criptografia de nível bancário, autenticação multifator e conformidade total com LGPD. Seus dados são protegidos com os mais altos padrões de segurança da indústria."
-    },
-    {
-      question: "Posso cancelar a qualquer momento?",
-      answer: "Absolutamente! Não temos fidelidade. Você pode cancelar quando quiser e seus dados permanecem acessíveis por 90 dias após o cancelamento."
-    },
-    {
-      question: "Como funciona a integração com WhatsApp?",
-      answer: "Conectamos diretamente com sua conta WhatsApp Business via API oficial. Você pode receber relatórios, alertas e até mesmo registrar transações por mensagem de forma segura."
-    },
-    {
-      question: "Vocês oferecem suporte técnico?",
-      answer: "Sim! Temos suporte por email, chat ao vivo e para clientes Enterprise, suporte telefônico 24/7 com SLA garantido de resposta em até 1 hora."
-    }
+    { value: "25K+", label: "Empresas Ativas" },
+    { value: "R$ 500M+", label: "Processado Mensalmente" },
+    { value: "99.8%", label: "Uptime Garantido" },
+    { value: "4.9/5", label: "Satisfação do Cliente" }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-slate-950 text-white">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border/50">
+      <header className="sticky top-0 z-50 bg-slate-950/95 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
-                <span className="text-xl">💰</span>
+              <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-xl flex items-center justify-center">
+                <span className="text-xl font-bold">F</span>
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
                 FinançaIA
               </span>
             </div>
             <div className="flex items-center gap-4">
               <ThemeToggle />
               <Link to="/auth">
-                <Button className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90">
-                  Entrar
+                <Button className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700 text-white">
+                  Começar Agora
                 </Button>
               </Link>
             </div>
@@ -229,31 +168,31 @@ const Index = () => {
 
       {/* Hero Section */}
       <section className="py-20 lg:py-32 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/5 to-purple-500/5"></div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
-          <Badge className="mb-6 bg-gradient-to-r from-primary/20 to-secondary/20 text-primary border-primary/20">
-            🚀 Agora com IA Gemini Integrada
+          <Badge className="mb-6 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 text-cyan-300 border-cyan-500/30">
+            🚀 Nova Versão com IA Gemini
           </Badge>
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
-            O Futuro das
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent block">
-              Finanças Inteligentes
+            Gestão Financeira
+            <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent block">
+              Inteligente e Automatizada
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
-            Plataforma completa com IA Gemini, CRM, Kanban e análises avançadas. 
-            Transforme sua gestão financeira com tecnologia de ponta e automação inteligente.
+          <p className="text-xl text-slate-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+            Plataforma completa com IA avançada, CRM integrado, automação WhatsApp e relatórios em tempo real. 
+            Transforme sua gestão financeira com tecnologia de ponta.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link to="/auth">
-              <Button size="lg" className="text-lg px-8 py-4 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 shadow-lg">
+              <Button size="lg" className="text-lg px-8 py-4 bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700 shadow-xl">
                 <Play className="mr-2 h-5 w-5" />
-                Começar Gratuitamente
+                Testar Gratuitamente
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-4 border-border hover:bg-muted">
+            <Button size="lg" variant="outline" className="text-lg px-8 py-4 border-slate-700 text-slate-300 hover:bg-slate-800">
               <Globe className="mr-2 h-5 w-5" />
-              Ver Demo Interativa
+              Ver Demonstração
             </Button>
           </div>
           
@@ -261,10 +200,10 @@ const Index = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 max-w-4xl mx-auto">
             {stats.map((stat, index) => (
               <div key={index} className="text-center">
-                <div className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
+                <div className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent mb-2">
                   {stat.value}
                 </div>
-                <div className="text-sm text-muted-foreground">{stat.label}</div>
+                <div className="text-sm text-slate-400">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -272,29 +211,29 @@ const Index = () => {
       </section>
 
       {/* Features Grid */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <Badge className="mb-4 bg-primary/10 text-primary border-primary/20">
+            <Badge className="mb-4 bg-cyan-500/10 text-cyan-300 border-cyan-500/30">
               Funcionalidades Premium
             </Badge>
-            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Tudo que Você Precisa em Uma Plataforma
+            <h2 className="text-4xl font-bold mb-4 bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+              Tudo que Sua Empresa Precisa
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Tecnologia de ponta, interface intuitiva e recursos avançados para revolucionar sua gestão financeira
+            <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+              Solução completa para gestão financeira empresarial com tecnologia de última geração
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="border-border/50 hover:border-primary/20 transition-all duration-300 hover:scale-105 hover:shadow-lg group">
+              <Card key={index} className="border-slate-800 bg-slate-900/50 hover:border-cyan-500/30 transition-all duration-300 hover:scale-105 group">
                 <CardHeader className="pb-4">
                   <div className={`w-12 h-12 ${feature.bgColor} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
                     <feature.icon className={`h-6 w-6 ${feature.color}`} />
                   </div>
-                  <CardTitle className="text-lg">{feature.title}</CardTitle>
-                  <CardDescription className="text-sm leading-relaxed">
+                  <CardTitle className="text-lg text-white">{feature.title}</CardTitle>
+                  <CardDescription className="text-sm leading-relaxed text-slate-400">
                     {feature.description}
                   </CardDescription>
                 </CardHeader>
@@ -308,35 +247,35 @@ const Index = () => {
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <Badge className="mb-4 bg-secondary/10 text-secondary border-secondary/20">
-              Depoimentos Reais
+            <Badge className="mb-4 bg-purple-500/10 text-purple-300 border-purple-500/30">
+              Casos de Sucesso
             </Badge>
-            <h2 className="text-4xl font-bold mb-4">
-              Mais de 50.000 Usuários Satisfeitos
+            <h2 className="text-4xl font-bold mb-4 text-white">
+              Mais de 25.000 Empresas Confiam
             </h2>
-            <p className="text-xl text-muted-foreground">
-              Veja como nossa plataforma transformou a vida financeira de empresas e profissionais
+            <p className="text-xl text-slate-300">
+              Veja como nossa plataforma transformou negócios de diversos segmentos
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="border-border/50 hover:shadow-lg transition-all duration-300">
+              <Card key={index} className="border-slate-800 bg-slate-900/50 hover:shadow-xl transition-all duration-300">
                 <CardContent className="p-6">
                   <div className="flex mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (
                       <Star key={i} className="h-5 w-5 text-yellow-400 fill-current" />
                     ))}
                   </div>
-                  <p className="text-muted-foreground mb-6 leading-relaxed">"{testimonial.content}"</p>
+                  <p className="text-slate-300 mb-6 leading-relaxed">"{testimonial.content}"</p>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center text-primary-foreground font-semibold">
+                    <div className="w-10 h-10 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
                       {testimonial.avatar}
                     </div>
                     <div>
-                      <p className="font-semibold">{testimonial.name}</p>
-                      <p className="text-sm text-muted-foreground">{testimonial.role}</p>
-                      <p className="text-xs text-muted-foreground">{testimonial.company}</p>
+                      <p className="font-semibold text-white">{testimonial.name}</p>
+                      <p className="text-sm text-slate-400">{testimonial.role}</p>
+                      <p className="text-xs text-slate-500">{testimonial.company}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -347,46 +286,46 @@ const Index = () => {
       </section>
 
       {/* Pricing */}
-      <section className="py-20 bg-muted/30">
+      <section className="py-20 bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <Badge className="mb-4 bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+            <Badge className="mb-4 bg-emerald-500/10 text-emerald-300 border-emerald-500/30">
               Planos Flexíveis
             </Badge>
-            <h2 className="text-4xl font-bold mb-4">
-              Escolha o Plano Ideal para Você
+            <h2 className="text-4xl font-bold mb-4 text-white">
+              Escolha o Plano Ideal
             </h2>
-            <p className="text-xl text-muted-foreground">
-              Sem fidelidade, sem taxas ocultas. Cancele quando quiser.
+            <p className="text-xl text-slate-300">
+              Sem fidelidade, sem taxas ocultas. Escale conforme cresce.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {plans.map((plan, index) => (
-              <Card key={index} className={`relative border-border/50 transition-all duration-300 hover:scale-105 ${plan.highlighted ? 'border-primary shadow-xl shadow-primary/20' : ''}`}>
+              <Card key={index} className={`relative border-slate-800 bg-slate-900/50 transition-all duration-300 hover:scale-105 ${plan.highlighted ? 'border-cyan-500 shadow-xl shadow-cyan-500/20' : ''}`}>
                 {plan.highlighted && (
-                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-primary to-secondary text-primary-foreground">
+                  <Badge className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-cyan-500 to-purple-500 text-white">
                     Mais Popular
                   </Badge>
                 )}
                 <CardHeader className="text-center pb-4">
-                  <CardTitle className="text-2xl">{plan.name}</CardTitle>
+                  <CardTitle className="text-2xl text-white">{plan.name}</CardTitle>
                   <div className="flex items-baseline justify-center gap-1 mb-2">
-                    <span className="text-4xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground">{plan.period}</span>
+                    <span className="text-4xl font-bold text-white">{plan.price}</span>
+                    <span className="text-slate-400">{plan.period}</span>
                   </div>
-                  <CardDescription>{plan.description}</CardDescription>
+                  <CardDescription className="text-slate-400">{plan.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-3 mb-6">
                     {plan.features.map((feature, featureIndex) => (
                       <li key={featureIndex} className="flex items-center gap-3">
-                        <CheckCircle className="h-4 w-4 text-emerald-500 flex-shrink-0" />
-                        <span className="text-sm">{feature}</span>
+                        <CheckCircle className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                        <span className="text-sm text-slate-300">{feature}</span>
                       </li>
                     ))}
                   </ul>
-                  <Button className={`w-full ${plan.highlighted ? 'bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90' : ''}`}>
+                  <Button className={`w-full ${plan.highlighted ? 'bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-700 hover:to-purple-700' : 'bg-slate-800 hover:bg-slate-700 text-white'}`}>
                     Começar Agora
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
@@ -397,131 +336,95 @@ const Index = () => {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge className="mb-4 bg-blue-500/10 text-blue-600 border-blue-500/20">
-              Dúvidas Frequentes
-            </Badge>
-            <h2 className="text-4xl font-bold mb-4">
-              Tudo que Você Precisa Saber
-            </h2>
-          </div>
-
-          <div className="space-y-6">
-            {faqs.map((faq, index) => (
-              <Card key={index} className="border-border/50">
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-3">
-                    <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs font-semibold text-primary">{index + 1}</span>
-                    </div>
-                    {faq.question}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground leading-relaxed pl-9">{faq.answer}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-primary to-secondary">
+      <section className="py-20 bg-gradient-to-r from-cyan-600 to-purple-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-primary-foreground mb-4">
+          <h2 className="text-4xl font-bold text-white mb-4">
             Pronto para Revolucionar suas Finanças?
           </h2>
-          <p className="text-xl text-primary-foreground/90 mb-8 max-w-3xl mx-auto">
-            Junte-se a mais de 50.000 usuários que já transformaram sua gestão financeira com IA
+          <p className="text-xl text-white/90 mb-8 max-w-3xl mx-auto">
+            Junte-se a mais de 25.000 empresas que já transformaram sua gestão financeira
           </p>
           <div className="flex items-center justify-center gap-6 mb-8 flex-wrap">
-            <div className="flex items-center gap-2 text-primary-foreground/90">
+            <div className="flex items-center gap-2 text-white/90">
               <CheckCircle className="h-6 w-6" />
-              <span>Grátis para começar</span>
+              <span>Teste grátis 14 dias</span>
             </div>
-            <div className="flex items-center gap-2 text-primary-foreground/90">
+            <div className="flex items-center gap-2 text-white/90">
               <CheckCircle className="h-6 w-6" />
-              <span>Setup em 2 minutos</span>
+              <span>Setup em 5 minutos</span>
             </div>
-            <div className="flex items-center gap-2 text-primary-foreground/90">
+            <div className="flex items-center gap-2 text-white/90">
               <CheckCircle className="h-6 w-6" />
-              <span>Suporte 24/7</span>
-            </div>
-            <div className="flex items-center gap-2 text-primary-foreground/90">
-              <CheckCircle className="h-6 w-6" />
-              <span>Sem fidelidade</span>
+              <span>Suporte especializado</span>
             </div>
           </div>
           <Link to="/auth">
-            <Button size="lg" variant="secondary" className="text-lg px-8 py-4 bg-background text-foreground hover:bg-background/90 shadow-lg">
+            <Button size="lg" variant="secondary" className="text-lg px-8 py-4 bg-white text-slate-900 hover:bg-gray-100 shadow-xl">
               <Zap className="mr-2 h-5 w-5" />
-              Criar Conta Gratuita
+              Começar Gratuitamente
             </Button>
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-background py-12 border-t border-border/50">
+      <footer className="bg-slate-950 py-12 border-t border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg flex items-center justify-center">
-                  <span className="text-lg">💰</span>
+                <div className="w-8 h-8 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-lg flex items-center justify-center">
+                  <span className="text-lg font-bold">F</span>
                 </div>
-                <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
                   FinançaIA
                 </span>
               </div>
-              <p className="text-muted-foreground text-sm leading-relaxed">
-                A revolução da gestão financeira inteligente. Tecnologia de ponta para seu sucesso.
+              <p className="text-slate-400 text-sm leading-relaxed">
+                Revolucionando a gestão financeira empresarial com inteligência artificial e automação.
               </p>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4">Produto</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Funcionalidades</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Preços</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">API</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Integrações</a></li>
+              <h4 className="font-semibold mb-4 text-white">Produto</h4>
+              <ul className="space-y-2 text-sm text-slate-400">
+                <li><a href="#" className="hover:text-white transition-colors">Funcionalidades</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Preços</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">API</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Integrações</a></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4">Empresa</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Sobre</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Blog</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Carreiras</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Contato</a></li>
+              <h4 className="font-semibold mb-4 text-white">Empresa</h4>
+              <ul className="space-y-2 text-sm text-slate-400">
+                <li><a href="#" className="hover:text-white transition-colors">Sobre</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Carreiras</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Contato</a></li>
               </ul>
             </div>
             
             <div>
-              <h4 className="font-semibold mb-4">Suporte</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">Central de Ajuda</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Documentação</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Status</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">Segurança</a></li>
+              <h4 className="font-semibold mb-4 text-white">Suporte</h4>
+              <ul className="space-y-2 text-sm text-slate-400">
+                <li><a href="#" className="hover:text-white transition-colors">Central de Ajuda</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Documentação</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Status</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Segurança</a></li>
               </ul>
             </div>
           </div>
           
-          <div className="border-t border-border/50 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-muted-foreground text-sm">
+          <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-slate-400 text-sm">
               © 2024 FinançaIA. Todos os direitos reservados.
             </p>
-            <div className="flex gap-6 mt-4 md:mt-0 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Privacidade</a>
-              <a href="#" className="hover:text-foreground transition-colors">Termos</a>
-              <a href="#" className="hover:text-foreground transition-colors">LGPD</a>
+            <div className="flex gap-6 mt-4 md:mt-0 text-sm text-slate-400">
+              <a href="#" className="hover:text-white transition-colors">Privacidade</a>
+              <a href="#" className="hover:text-white transition-colors">Termos</a>
+              <a href="#" className="hover:text-white transition-colors">LGPD</a>
             </div>
           </div>
         </div>

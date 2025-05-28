@@ -1,190 +1,248 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Brain, Send, Loader2, Sparkles, TrendingUp, AlertTriangle, Target } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Brain, Zap, TrendingUp, AlertTriangle, Lightbulb, RefreshCw } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const AIInsights = () => {
   const { user } = useAuth();
-  const [question, setQuestion] = useState('');
-  const [response, setResponse] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!question.trim() || !user) return;
+  const { data: insights, isLoading } = useQuery({
+    queryKey: ['ai-insights', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
 
-    setIsLoading(true);
-    try {
-      // Obter o token de autenticação
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.access_token) {
-        throw new Error('Sessão não encontrada');
-      }
+      const { data, error } = await supabase
+        .from('ai_analysis')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('analysis_type', 'financial_insights')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user
+  });
+
+  const generateInsights = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('User not authenticated');
+
+      // Buscar dados financeiros para análise
+      const { data: transactions } = await supabase
+        .from('transactions')
+        .select('amount, type, category, created_at')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      const { data: budgets } = await supabase
+        .from('budgets')
+        .select('amount, category')
+        .eq('user_id', user.id);
+
+      const totalIncome = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+      const totalExpenses = transactions?.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0) || 0;
+      const totalBudget = budgets?.reduce((sum, b) => sum + Number(b.amount), 0) || 0;
+
+      const prompt = `Analise os dados financeiros do usuário e forneça insights detalhados:
+
+Dados Financeiros:
+- Receitas totais: R$ ${totalIncome.toLocaleString('pt-BR')}
+- Despesas totais: R$ ${totalExpenses.toLocaleString('pt-BR')}
+- Saldo atual: R$ ${(totalIncome - totalExpenses).toLocaleString('pt-BR')}
+- Orçamento total: R$ ${totalBudget.toLocaleString('pt-BR')}
+- Total de transações: ${transactions?.length || 0}
+
+Forneça insights práticos sobre:
+1. Padrões de gastos identificados
+2. Oportunidades de economia
+3. Alertas sobre gastos excessivos
+4. Recomendações para melhorar o controle financeiro
+5. Sugestões de metas financeiras
+
+Seja específico e prático nas recomendações.`;
 
       const { data, error } = await supabase.functions.invoke('ai-financial-advisor', {
-        body: { prompt: question, userId: user.id },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
+        body: { prompt, userId: user.id }
       });
 
       if (error) throw error;
 
-      setResponse(data.response);
+      // Salvar insights no banco
+      const { error: saveError } = await supabase
+        .from('ai_analysis')
+        .insert({
+          user_id: user.id,
+          analysis_type: 'financial_insights',
+          content: data.response,
+          metadata: {
+            total_income: totalIncome,
+            total_expenses: totalExpenses,
+            total_budget: totalBudget,
+            transaction_count: transactions?.length || 0
+          }
+        });
+
+      if (saveError) throw saveError;
+
+      return data.response;
+    },
+    onSuccess: () => {
       toast({
-        title: 'Análise concluída!',
-        description: 'A IA analisou sua pergunta.',
+        title: 'Insights gerados com sucesso!',
+        description: 'Análise IA concluída. Confira as recomendações.',
       });
-    } catch (error: any) {
-      console.error('Erro na análise:', error);
+      queryClient.invalidateQueries({ queryKey: ['ai-insights'] });
+    },
+    onError: (error: any) => {
+      console.error('Erro ao gerar insights:', error);
       toast({
-        title: 'Erro na análise',
-        description: error.message,
+        title: 'Erro ao gerar insights',
+        description: error.message || 'Tente novamente em alguns instantes.',
         variant: 'destructive',
       });
+    }
+  });
+
+  const handleGenerateInsights = async () => {
+    setIsGenerating(true);
+    try {
+      await generateInsights.mutateAsync();
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
     }
   };
 
-  const quickQuestions = [
-    {
-      icon: TrendingUp,
-      question: "Como estão meus gastos este mês comparado ao anterior?",
-      color: "from-blue-500 to-cyan-500"
-    },
-    {
-      icon: AlertTriangle,
-      question: "Identifique os maiores riscos no meu orçamento atual",
-      color: "from-yellow-500 to-orange-500"
-    },
-    {
-      icon: Target,
-      question: "Quais são as melhores oportunidades de economia?",
-      color: "from-green-500 to-emerald-500"
-    },
-    {
-      icon: Sparkles,
-      question: "Crie um plano de investimento baseado no meu perfil",
-      color: "from-purple-500 to-pink-500"
-    }
-  ];
+  const formatInsights = (content: string) => {
+    const sections = content.split(/\d+\./).filter(section => section.trim());
+    return sections.map((section, index) => {
+      const lines = section.trim().split('\n').filter(line => line.trim());
+      const title = lines[0]?.replace(/[:-]/g, '').trim();
+      const description = lines.slice(1).join(' ').trim();
+      
+      return { title, description, id: index };
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="border-slate-800 bg-slate-900/50">
+        <CardHeader>
+          <CardTitle className="text-white">Insights IA</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse space-y-4">
+            <div className="h-4 bg-slate-700 rounded w-3/4"></div>
+            <div className="h-4 bg-slate-700 rounded w-1/2"></div>
+            <div className="h-4 bg-slate-700 rounded w-2/3"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
-    <Card className="border-slate-700/50 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-sm">
-      <CardHeader className="border-b border-slate-700/50">
-        <CardTitle className="flex items-center gap-3 text-white">
-          <div className="p-3 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-xl">
-            <Brain className="h-6 w-6" />
-          </div>
-          <div className="flex items-center gap-2">
-            Consultor Financeiro IA
-            <Sparkles className="h-5 w-5 text-cyan-400 animate-pulse" />
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6 space-y-6">
-        {/* Quick Questions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {quickQuestions.map((item, index) => {
-            const IconComponent = item.icon;
-            return (
-              <Button
-                key={index}
-                onClick={() => setQuestion(item.question)}
-                variant="outline"
-                className={`h-auto p-4 text-left border-slate-600 hover:border-slate-500 bg-gradient-to-r ${item.color}/10 hover:${item.color}/20 transition-all duration-300`}
-              >
-                <div className="flex items-start gap-3 w-full">
-                  <IconComponent className="h-5 w-5 mt-0.5 flex-shrink-0 text-white" />
-                  <span className="text-slate-300 text-sm leading-relaxed">
-                    {item.question}
-                  </span>
-                </div>
-              </Button>
-            );
-          })}
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="question" className="text-slate-300 font-medium">
-              Sua pergunta personalizada:
-            </label>
-            <Textarea
-              id="question"
-              placeholder="Ex: Como posso economizar mais? Quais são meus maiores gastos? Preciso de conselhos para investir..."
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              rows={4}
-              className="bg-slate-700/80 border-slate-600 text-white placeholder-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20 resize-none"
-            />
-          </div>
-          
-          <Button 
-            type="submit" 
-            disabled={isLoading || !question.trim()} 
-            className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white font-semibold py-3 transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+    <Card className="border-slate-800 bg-slate-900/50">
+      <CardHeader className="border-b border-slate-800">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-white flex items-center gap-2">
+            <Brain className="h-5 w-5 text-purple-400" />
+            Insights Financeiros IA
+          </CardTitle>
+          <Button
+            onClick={handleGenerateInsights}
+            disabled={isGenerating}
+            size="sm"
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                Analisando com IA...
-              </>
+            {isGenerating ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <>
-                <Send className="h-5 w-5 mr-2" />
-                Consultar Gemini AI
-              </>
+              <Zap className="h-4 w-4 mr-2" />
             )}
+            {isGenerating ? 'Analisando...' : 'Gerar Insights'}
           </Button>
-        </form>
-
-        {response && (
-          <div className="bg-gradient-to-br from-slate-800/80 to-cyan-900/20 rounded-xl p-6 border border-cyan-500/30 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="p-2 bg-gradient-to-br from-cyan-500 to-purple-500 rounded-lg">
-                <Brain className="h-5 w-5 text-white" />
-              </div>
-              <h4 className="font-semibold text-cyan-300 text-lg">
-                Análise Personalizada da IA
-              </h4>
-            </div>
-            <div className="prose prose-invert prose-cyan max-w-none">
-              <div className="text-slate-300 whitespace-pre-wrap leading-relaxed text-sm">
-                {response.split('\n').map((paragraph, index) => (
-                  <p key={index} className="mb-3 last:mb-0">
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-cyan-500/20">
-              <p className="text-cyan-400/70 text-xs">
-                ✨ Análise gerada por Gemini AI • {new Date().toLocaleString('pt-BR')}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {!response && !isLoading && (
+        </div>
+      </CardHeader>
+      <CardContent className="p-6">
+        {!insights || insights.length === 0 ? (
           <div className="text-center py-8">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500/20 to-cyan-500/20 rounded-full flex items-center justify-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500/20 to-pink-500/20 rounded-full flex items-center justify-center">
               <Brain className="h-8 w-8 text-purple-400" />
             </div>
             <h3 className="text-lg font-semibold text-white mb-2">
-              Pronto para análise inteligente
+              Insights IA Personalizados
             </h3>
-            <p className="text-slate-400 text-sm">
-              Escolha uma pergunta rápida ou escreva sua própria questão financeira
+            <p className="text-slate-400 mb-4">
+              Gere análises inteligentes sobre seus padrões financeiros
             </p>
+            <Button
+              onClick={handleGenerateInsights}
+              disabled={isGenerating}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              {isGenerating ? (
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Lightbulb className="h-4 w-4 mr-2" />
+              )}
+              {isGenerating ? 'Gerando Insights...' : 'Gerar Primeira Análise'}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/30">
+                Gerado em {new Date(insights[0].created_at).toLocaleDateString('pt-BR')}
+              </Badge>
+            </div>
+            
+            <div className="space-y-4">
+              {formatInsights(insights[0].content).map((insight, index) => (
+                <div key={insight.id} className="p-4 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                      {index === 0 && <TrendingUp className="h-4 w-4 text-white" />}
+                      {index === 1 && <Lightbulb className="h-4 w-4 text-white" />}
+                      {index === 2 && <AlertTriangle className="h-4 w-4 text-white" />}
+                      {index >= 3 && <Brain className="h-4 w-4 text-white" />}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-white mb-2">{insight.title}</h4>
+                      <p className="text-slate-300 text-sm leading-relaxed">{insight.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-4 border-t border-slate-800">
+              <Button
+                onClick={handleGenerateInsights}
+                disabled={isGenerating}
+                variant="outline"
+                size="sm"
+                className="w-full border-purple-500 text-purple-400 hover:bg-purple-500/10"
+              >
+                {isGenerating ? (
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                Atualizar Análise
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>
