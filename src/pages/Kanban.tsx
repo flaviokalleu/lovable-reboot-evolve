@@ -1,184 +1,223 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import Layout from '@/components/Layout';
+import KanbanBoardManager from '@/components/KanbanBoardManager';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Calendar, User, DollarSign, Edit, Trash2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Calendar, User, Trash2, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import KanbanBoardManager from '@/components/KanbanBoardManager';
-
-interface KanbanTask {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  priority: string;
-  assignee: string;
-  due_date: string;
-  value: number;
-  board_id: string;
-}
 
 interface KanbanBoard {
   id: string;
   name: string;
-  description: string;
-  color: string;
-  user_id: string;
+  description?: string;
   created_at: string;
+}
+
+interface KanbanTask {
+  id: string;
+  title: string;
+  description?: string;
+  status: string;
+  priority: 'baixa' | 'media' | 'alta' | 'urgente';
+  assigned_to?: string;
+  due_date?: string;
+  board_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 const Kanban = () => {
   const { user, loading } = useAuth();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedBoard, setSelectedBoard] = useState<KanbanBoard | null>(null);
+  const [tasks, setTasks] = useState<KanbanTask[]>([]);
+  const [showTaskForm, setShowTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<KanbanTask | null>(null);
-  const [selectedBoard, setSelectedBoard] = useState<KanbanBoard | undefined>();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const [formData, setFormData] = useState({
+  const [newTask, setNewTask] = useState({
     title: '',
     description: '',
     status: 'todo',
-    priority: 'media',
-    assignee: '',
-    due_date: '',
-    value: 0
+    priority: 'media' as const,
+    assigned_to: '',
+    due_date: ''
   });
+  const { toast } = useToast();
 
-  // Fetch tasks for selected board
-  const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['kanban-tasks', selectedBoard?.id],
-    queryFn: async () => {
-      if (!selectedBoard) return [];
+  const statuses = [
+    { id: 'todo', name: 'A Fazer', color: 'bg-gray-500' },
+    { id: 'in_progress', name: 'Em Progresso', color: 'bg-blue-500' },
+    { id: 'review', name: 'Em Revisão', color: 'bg-yellow-500' },
+    { id: 'done', name: 'Concluído', color: 'bg-green-500' }
+  ];
+
+  const priorities = [
+    { value: 'baixa', label: 'Baixa', color: 'bg-green-100 text-green-800' },
+    { value: 'media', label: 'Média', color: 'bg-yellow-100 text-yellow-800' },
+    { value: 'alta', label: 'Alta', color: 'bg-orange-100 text-orange-800' },
+    { value: 'urgente', label: 'Urgente', color: 'bg-red-100 text-red-800' }
+  ];
+
+  useEffect(() => {
+    if (selectedBoard) {
+      loadTasks();
+    }
+  }, [selectedBoard]);
+
+  const loadTasks = async () => {
+    try {
       const { data, error } = await supabase
         .from('kanban_tasks')
         .select('*')
-        .eq('board_id', selectedBoard.id)
+        .eq('board_id', selectedBoard?.id)
         .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as KanbanTask[];
-    },
-    enabled: !!user && !!selectedBoard
-  });
 
-  // Create/Update task mutation
-  const taskMutation = useMutation({
-    mutationFn: async (taskData: any) => {
-      if (editingTask) {
-        const { data, error } = await supabase
-          .from('kanban_tasks')
-          .update(taskData)
-          .eq('id', editingTask.id)
-          .select()
-          .single();
-        if (error) throw error;
-        return data;
-      } else {
-        const { data, error } = await supabase
-          .from('kanban_tasks')
-          .insert([{ 
-            ...taskData, 
-            user_id: user?.id,
-            board_id: selectedBoard?.id 
-          }])
-          .select()
-          .single();
-        if (error) throw error;
-        return data;
+      if (error) {
+        console.error('Erro ao carregar tarefas:', error);
+        toast({
+          title: 'Erro ao carregar tarefas',
+          description: 'Ocorreu um erro ao buscar as tarefas do quadro.',
+          variant: 'destructive',
+        });
+        return;
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kanban-tasks'] });
-      toast({
-        title: editingTask ? "Tarefa atualizada!" : "Tarefa criada!",
-        description: "Operação realizada com sucesso.",
-      });
-      resetForm();
-    }
-  });
 
-  // Delete task mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (taskId: string) => {
+      setTasks(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar tarefas:', error);
+      toast({
+        title: 'Erro ao carregar tarefas',
+        description: 'Ocorreu um erro inesperado ao buscar as tarefas do quadro.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const createTask = async () => {
+    if (!selectedBoard) {
+      toast({
+        title: 'Nenhum quadro selecionado',
+        description: 'Selecione um quadro para criar uma tarefa.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('kanban_tasks')
+        .insert([{
+          ...newTask,
+          board_id: selectedBoard.id,
+          assigned_to: user?.id || null,
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar tarefa:', error);
+        toast({
+          title: 'Erro ao criar tarefa',
+          description: 'Ocorreu um erro ao salvar a tarefa.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setTasks([...tasks, data]);
+      setShowTaskForm(false);
+      setNewTask({
+        title: '',
+        description: '',
+        status: 'todo',
+        priority: 'media',
+        assigned_to: '',
+        due_date: ''
+      });
+      toast({
+        title: 'Tarefa criada',
+        description: 'Tarefa criada com sucesso!',
+      });
+    } catch (error) {
+      console.error('Erro ao criar tarefa:', error);
+      toast({
+        title: 'Erro ao criar tarefa',
+        description: 'Ocorreu um erro inesperado ao criar a tarefa.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const updateTask = async () => {
+    if (!editingTask) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('kanban_tasks')
+        .update({ ...editingTask })
+        .eq('id', editingTask.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Erro ao atualizar tarefa:', error);
+        toast({
+          title: 'Erro ao atualizar tarefa',
+          description: 'Ocorreu um erro ao atualizar a tarefa.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setTasks(tasks.map(task => (task.id === editingTask.id ? data : task)));
+      setEditingTask(null);
+      toast({
+        title: 'Tarefa atualizada',
+        description: 'Tarefa atualizada com sucesso!',
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar tarefa:', error);
+      toast({
+        title: 'Erro ao atualizar tarefa',
+        description: 'Ocorreu um erro inesperado ao atualizar a tarefa.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const deleteTask = async (taskId: string) => {
+    try {
       const { error } = await supabase
         .from('kanban_tasks')
         .delete()
         .eq('id', taskId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['kanban-tasks'] });
+
+      if (error) {
+        console.error('Erro ao deletar tarefa:', error);
+        toast({
+          title: 'Erro ao deletar tarefa',
+          description: 'Ocorreu um erro ao deletar a tarefa.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setTasks(tasks.filter(task => task.id !== taskId));
       toast({
-        title: "Tarefa excluída!",
-        description: "Tarefa removida com sucesso.",
+        title: 'Tarefa deletada',
+        description: 'Tarefa deletada com sucesso!',
       });
-    }
-  });
-
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      status: 'todo',
-      priority: 'media',
-      assignee: '',
-      due_date: '',
-      value: 0
-    });
-    setEditingTask(null);
-    setIsDialogOpen(false);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedBoard) {
+    } catch (error) {
+      console.error('Erro ao deletar tarefa:', error);
       toast({
-        title: "Erro",
-        description: "Selecione um board primeiro.",
-        variant: "destructive",
-      });
-      return;
-    }
-    taskMutation.mutate(formData);
-  };
-
-  const handleEdit = (task: KanbanTask) => {
-    setEditingTask(task);
-    setFormData({
-      title: task.title,
-      description: task.description || '',
-      status: task.status,
-      priority: task.priority || 'media',
-      assignee: task.assignee || '',
-      due_date: task.due_date || '',
-      value: task.value || 0
-    });
-    setIsDialogOpen(true);
-  };
-
-  const updateTaskStatus = async (taskId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('kanban_tasks')
-      .update({ status: newStatus })
-      .eq('id', taskId);
-
-    if (!error) {
-      queryClient.invalidateQueries({ queryKey: ['kanban-tasks'] });
-      toast({
-        title: "Status atualizado!",
-        description: "Tarefa movida com sucesso.",
+        title: 'Erro ao deletar tarefa',
+        description: 'Ocorreu um erro inesperado ao deletar a tarefa.',
+        variant: 'destructive',
       });
     }
   };
@@ -195,320 +234,233 @@ const Kanban = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critica': return 'bg-red-600 text-white';
-      case 'alta': return 'bg-orange-600 text-white';
-      case 'media': return 'bg-yellow-600 text-black';
-      case 'baixa': return 'bg-green-600 text-white';
-      default: return 'bg-gray-600 text-white';
-    }
-  };
-
-  const getColumnColor = (column: string) => {
-    switch (column) {
-      case 'todo': return 'border-t-blue-500';
-      case 'progress': return 'border-t-orange-500';
-      case 'review': return 'border-t-purple-500';
-      case 'done': return 'border-t-green-500';
-      default: return 'border-t-gray-500';
-    }
-  };
-
-  const columns = {
-    todo: { title: 'A Fazer', tasks: tasks.filter(t => t.status === 'todo') },
-    progress: { title: 'Em Progresso', tasks: tasks.filter(t => t.status === 'progress') },
-    review: { title: 'Revisão', tasks: tasks.filter(t => t.status === 'review') },
-    done: { title: 'Concluído', tasks: tasks.filter(t => t.status === 'done') }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-900">
-      <Layout>
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 text-white">
-            <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-              <Calendar className="h-8 w-8" />
-              Kanban - Gestão de Projetos
-            </h1>
-            <p className="text-indigo-100">Organize e acompanhe suas tarefas financeiras</p>
+    <Layout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Kanban</h1>
+          <p className="text-gray-400">Gerencie suas tarefas e projetos</p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <KanbanBoardManager 
+              onBoardSelect={setSelectedBoard}
+              selectedBoard={selectedBoard}
+            />
           </div>
 
-          {/* Board Manager */}
-          <KanbanBoardManager 
-            onBoardSelect={setSelectedBoard}
-            selectedBoard={selectedBoard}
-          />
+          <div className="lg:col-span-2">
+            {selectedBoard ? (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">{selectedBoard.name}</h2>
+                    <p className="text-gray-400">{selectedBoard.description}</p>
+                  </div>
+                  <Button 
+                    onClick={() => setShowTaskForm(true)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Tarefa
+                  </Button>
+                </div>
 
-          {selectedBoard && (
-            <>
-              {/* Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {Object.entries(columns).map(([key, column]) => (
-                  <Card key={key} className={`${getColumnColor(key)} border-t-4 bg-gray-800 border-gray-700`}>
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <h3 className="font-semibold text-white">{column.title}</h3>
-                        <p className="text-2xl font-bold text-white">{column.tasks.length}</p>
-                        <p className="text-sm text-gray-400">tarefas</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {statuses.map(status => (
+                    <div key={status.id} className="space-y-3">
+                      <div className={`${status.color} text-white p-2 rounded-lg text-center font-medium`}>
+                        {status.name}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Action Bar */}
-              <div className="flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-white">Board: {selectedBoard.name}</h2>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={resetForm}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Nova Tarefa
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md bg-gray-900 border-gray-800 text-white">
-                    <DialogHeader>
-                      <DialogTitle>{editingTask ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div>
-                        <Label htmlFor="title" className="text-white">Título *</Label>
-                        <Input
-                          id="title"
-                          value={formData.title}
-                          onChange={(e) => setFormData({...formData, title: e.target.value})}
-                          required
-                          className="bg-gray-800 border-gray-700 text-white"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="description" className="text-white">Descrição</Label>
-                        <Textarea
-                          id="description"
-                          value={formData.description}
-                          onChange={(e) => setFormData({...formData, description: e.target.value})}
-                          className="bg-gray-800 border-gray-700 text-white"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="status" className="text-white">Status</Label>
-                        <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
-                          <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-gray-800 border-gray-700">
-                            <SelectItem value="todo" className="text-white hover:bg-gray-700">A Fazer</SelectItem>
-                            <SelectItem value="progress" className="text-white hover:bg-gray-700">Em Progresso</SelectItem>
-                            <SelectItem value="review" className="text-white hover:bg-gray-700">Revisão</SelectItem>
-                            <SelectItem value="done" className="text-white hover:bg-gray-700">Concluído</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="priority" className="text-white">Prioridade</Label>
-                        <Select value={formData.priority} onValueChange={(value) => setFormData({...formData, priority: value})}>
-                          <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-gray-800 border-gray-700">
-                            <SelectItem value="baixa" className="text-white hover:bg-gray-700">Baixa</SelectItem>
-                            <SelectItem value="media" className="text-white hover:bg-gray-700">Média</SelectItem>
-                            <SelectItem value="alta" className="text-white hover:bg-gray-700">Alta</SelectItem>
-                            <SelectItem value="critica" className="text-white hover:bg-gray-700">Crítica</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="assignee" className="text-white">Responsável</Label>
-                        <Input
-                          id="assignee"
-                          value={formData.assignee}
-                          onChange={(e) => setFormData({...formData, assignee: e.target.value})}
-                          className="bg-gray-800 border-gray-700 text-white"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="due_date" className="text-white">Data de Entrega</Label>
-                        <Input
-                          id="due_date"
-                          type="date"
-                          value={formData.due_date}
-                          onChange={(e) => setFormData({...formData, due_date: e.target.value})}
-                          className="bg-gray-800 border-gray-700 text-white"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="value" className="text-white">Valor</Label>
-                        <Input
-                          id="value"
-                          type="number"
-                          value={formData.value}
-                          onChange={(e) => setFormData({...formData, value: Number(e.target.value)})}
-                          className="bg-gray-800 border-gray-700 text-white"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button type="submit" disabled={taskMutation.isPending} className="bg-indigo-600 hover:bg-indigo-700">
-                          {taskMutation.isPending ? 'Salvando...' : 'Salvar'}
-                        </Button>
-                        <Button type="button" variant="outline" onClick={resetForm} className="border-gray-700 text-white hover:bg-gray-800">
-                          Cancelar
-                        </Button>
-                      </div>
-                    </form>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              {/* Kanban Board */}
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-screen">
-                {Object.entries(columns).map(([key, column]) => (
-                  <div key={key} className="space-y-4">
-                    <Card className={`${getColumnColor(key)} border-t-4 bg-gray-800 border-gray-700`}>
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-lg flex items-center justify-between text-white">
-                          {column.title}
-                          <Badge variant="secondary" className="bg-gray-700 text-white">{column.tasks.length}</Badge>
-                        </CardTitle>
-                      </CardHeader>
-                    </Card>
-
-                    <div className="space-y-3">
-                      {column.tasks.map((task) => (
-                        <Card key={task.id} className="hover:shadow-md transition-shadow cursor-pointer bg-gray-800 border-gray-700">
-                          <CardContent className="p-4">
-                            <div className="space-y-3">
-                              <div className="flex items-start justify-between">
-                                <h3 className="font-semibold text-white">{task.title}</h3>
-                                <div className="flex gap-1">
+                      <div className="space-y-2">
+                        {tasks
+                          .filter(task => task.status === status.id)
+                          .map(task => (
+                            <Card key={task.id} className="bg-gray-800 border-gray-700 cursor-pointer hover:bg-gray-750">
+                              <CardContent className="space-y-2 p-3">
+                                <div className="flex justify-between items-start">
+                                  <h3 className="text-white font-semibold">{task.title}</h3>
+                                  <Badge className={priorities.find(p => p.value === task.priority)?.color || 'bg-gray-100 text-gray-800'}>
+                                    {priorities.find(p => p.value === task.priority)?.label}
+                                  </Badge>
+                                </div>
+                                <p className="text-gray-400 text-sm">{task.description}</p>
+                                <div className="flex justify-between items-center text-gray-500 text-xs">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Sem data'}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <User className="h-3 w-3" />
+                                    {task.assigned_to || 'Ninguém'}
+                                  </div>
+                                </div>
+                                <div className="flex justify-end gap-2">
                                   <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => handleEdit(task)}
-                                    className="text-gray-400 hover:text-white hover:bg-gray-700"
+                                    onClick={() => setEditingTask(task)}
+                                    variant="ghost"
+                                    size="icon"
                                   >
-                                    <Edit className="h-3 w-3" />
+                                    <Edit className="h-4 w-4" />
                                   </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => deleteMutation.mutate(task.id)}
-                                    className="text-gray-400 hover:text-red-400 hover:bg-gray-700"
+                                  <Button
+                                    onClick={() => deleteTask(task.id)}
+                                    variant="ghost"
+                                    size="icon"
                                   >
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
-                              </div>
-                              
-                              <Badge className={getPriorityColor(task.priority)}>
-                                {task.priority}
-                              </Badge>
-                              
-                              {task.description && (
-                                <p className="text-sm text-gray-400">{task.description}</p>
-                              )}
-                              
-                              <div className="space-y-2">
-                                {task.assignee && (
-                                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                                    <User className="h-4 w-4" />
-                                    {task.assignee}
-                                  </div>
-                                )}
-                                
-                                {task.due_date && (
-                                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                                    <Calendar className="h-4 w-4" />
-                                    {new Date(task.due_date).toLocaleDateString('pt-BR')}
-                                  </div>
-                                )}
-                                
-                                {task.value > 0 && (
-                                  <div className="flex items-center gap-2 text-sm font-semibold text-green-400">
-                                    <DollarSign className="h-4 w-4" />
-                                    R$ {task.value.toLocaleString()}
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Status change buttons */}
-                              <div className="flex gap-1 flex-wrap">
-                                {key !== 'todo' && (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => updateTaskStatus(task.id, 'todo')}
-                                    className="text-xs border-gray-700 text-white hover:bg-gray-700"
-                                  >
-                                    ← Todo
-                                  </Button>
-                                )}
-                                {key !== 'progress' && (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => updateTaskStatus(task.id, 'progress')}
-                                    className="text-xs border-gray-700 text-white hover:bg-gray-700"
-                                  >
-                                    Progresso
-                                  </Button>
-                                )}
-                                {key !== 'review' && (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => updateTaskStatus(task.id, 'review')}
-                                    className="text-xs border-gray-700 text-white hover:bg-gray-700"
-                                  >
-                                    Revisão
-                                  </Button>
-                                )}
-                                {key !== 'done' && (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => updateTaskStatus(task.id, 'done')}
-                                    className="text-xs border-gray-700 text-white hover:bg-gray-700"
-                                  >
-                                    Concluído →
-                                  </Button>
-                                )}
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                      
-                      <Button 
-                        variant="outline" 
-                        className="w-full h-24 border-2 border-dashed border-gray-600 hover:border-gray-500 bg-gray-800 text-gray-400 hover:text-white"
-                        onClick={() => {
-                          setFormData({...formData, status: key});
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        <Plus className="h-6 w-6 mr-2" />
-                        Adicionar Tarefa
-                      </Button>
+                              </CardContent>
+                            </Card>
+                          ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </>
-          )}
-
-          {!selectedBoard && (
-            <Card className="bg-gray-800 border-gray-700">
-              <CardContent className="p-8 text-center">
-                <p className="text-gray-400 text-lg">Selecione ou crie um board para começar</p>
-              </CardContent>
-            </Card>
-          )}
+            ) : (
+              <Card className="bg-gray-900 border-gray-800">
+                <CardContent className="flex items-center justify-center h-64">
+                  <p className="text-gray-400">Selecione um quadro para ver as tarefas</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
-      </Layout>
-    </div>
+
+        {showTaskForm && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3 text-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Nova Tarefa</h3>
+                <div className="mt-2">
+                  <Input
+                    type="text"
+                    placeholder="Título da tarefa"
+                    value={newTask.title}
+                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                    className="mb-2"
+                  />
+                  <Textarea
+                    placeholder="Descrição da tarefa"
+                    value={newTask.description}
+                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                    className="mb-2"
+                  />
+                  <Select onValueChange={(value) => setNewTask({ ...newTask, status: value })}>
+                    <SelectTrigger className="w-full mb-2">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map(status => (
+                        <SelectItem key={status.id} value={status.id}>{status.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select onValueChange={(value) => setNewTask({ ...newTask, priority: value as "baixa" | "media" | "alta" | "urgente" })}>
+                    <SelectTrigger className="w-full mb-2">
+                      <SelectValue placeholder="Prioridade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorities.map(priority => (
+                        <SelectItem key={priority.value} value={priority.value}>{priority.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="date"
+                    value={newTask.due_date}
+                    onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
+                    className="mb-2"
+                  />
+                </div>
+                <div className="items-center px-4 py-3">
+                  <Button 
+                    onClick={createTask}
+                    className="bg-blue-600 hover:bg-blue-700 mr-2"
+                  >
+                    Criar
+                  </Button>
+                  <Button
+                    onClick={() => setShowTaskForm(false)}
+                    variant="ghost"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {editingTask && (
+          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+              <div className="mt-3 text-center">
+                <h3 className="text-lg leading-6 font-medium text-gray-900">Editar Tarefa</h3>
+                <div className="mt-2">
+                  <Input
+                    type="text"
+                    placeholder="Título da tarefa"
+                    value={editingTask.title}
+                    onChange={(e) => setEditingTask({ ...editingTask, title: e.target.value })}
+                    className="mb-2"
+                  />
+                  <Textarea
+                    placeholder="Descrição da tarefa"
+                    value={editingTask.description}
+                    onChange={(e) => setEditingTask({ ...editingTask, description: e.target.value })}
+                    className="mb-2"
+                  />
+                  <Select onValueChange={(value) => setEditingTask({ ...editingTask, status: value })}>
+                    <SelectTrigger className="w-full mb-2">
+                      <SelectValue placeholder="Status" value={editingTask.status} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statuses.map(status => (
+                        <SelectItem key={status.id} value={status.id}>{status.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select onValueChange={(value) => setEditingTask({ ...editingTask, priority: value as "baixa" | "media" | "alta" | "urgente" })}>
+                    <SelectTrigger className="w-full mb-2">
+                      <SelectValue placeholder="Prioridade" value={editingTask.priority} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {priorities.map(priority => (
+                        <SelectItem key={priority.value} value={priority.value}>{priority.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    type="date"
+                    value={editingTask.due_date || ''}
+                    onChange={(e) => setEditingTask({ ...editingTask, due_date: e.target.value })}
+                    className="mb-2"
+                  />
+                </div>
+                <div className="items-center px-4 py-3">
+                  <Button
+                    onClick={updateTask}
+                    className="bg-blue-600 hover:bg-blue-700 mr-2"
+                  >
+                    Salvar
+                  </Button>
+                  <Button
+                    onClick={() => setEditingTask(null)}
+                    variant="ghost"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 };
 

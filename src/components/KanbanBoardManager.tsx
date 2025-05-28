@@ -1,56 +1,57 @@
-
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Trash2, Plus, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit2, Trash2, Save, X, Folder } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface KanbanBoard {
   id: string;
   name: string;
-  description: string | null;
-  color: string;
-  user_id: string;
+  description?: string;
   created_at: string;
-  updated_at: string;
 }
 
-const KanbanBoardManager = () => {
-  const { user } = useAuth();
+interface KanbanBoardManagerProps {
+  onBoardSelect: (board: KanbanBoard) => void;
+  selectedBoard: KanbanBoard | null;
+}
+
+const KanbanBoardManager: React.FC<KanbanBoardManagerProps> = ({ onBoardSelect, selectedBoard }) => {
   const [boards, setBoards] = useState<KanbanBoard[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editDescription, setEditDescription] = useState('');
-  const [editColor, setEditColor] = useState('#3b82f6');
   const [newBoardName, setNewBoardName] = useState('');
   const [newBoardDescription, setNewBoardDescription] = useState('');
-  const [newBoardColor, setNewBoardColor] = useState('#3b82f6');
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
-      loadBoards();
-    }
-  }, [user]);
+    loadBoards();
+  }, []);
 
   const loadBoards = async () => {
+    setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('kanban_boards')
         .select('*')
-        .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setBoards((data || []) as KanbanBoard[]);
+      if (error) {
+        console.error('Erro ao carregar quadros:', error);
+        toast({
+          title: 'Erro ao carregar quadros',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        setBoards(data || []);
+      }
     } catch (error: any) {
+      console.error('Erro inesperado ao carregar quadros:', error);
       toast({
-        title: 'Erro ao carregar boards',
+        title: 'Erro inesperado',
         description: error.message,
         variant: 'destructive',
       });
@@ -59,241 +60,151 @@ const KanbanBoardManager = () => {
     }
   };
 
-  const handleEdit = (board: KanbanBoard) => {
-    setEditingId(board.id);
-    setEditName(board.name);
-    setEditDescription(board.description || '');
-    setEditColor(board.color);
-  };
-
-  const handleSave = async () => {
-    if (!editingId || !editName.trim()) return;
-
-    try {
-      const { error } = await supabase
-        .from('kanban_boards')
-        .update({
-          name: editName.trim(),
-          description: editDescription.trim() || null,
-          color: editColor,
-        })
-        .eq('id', editingId);
-
-      if (error) throw error;
-
-      setBoards(prev =>
-        prev.map(board =>
-          board.id === editingId
-            ? { 
-                ...board, 
-                name: editName.trim(), 
-                description: editDescription.trim() || null,
-                color: editColor 
-              }
-            : board
-        )
-      );
-
-      setEditingId(null);
-      setEditName('');
-      setEditDescription('');
-      setEditColor('#3b82f6');
-
+  const createBoard = async () => {
+    if (!newBoardName.trim()) {
       toast({
-        title: 'Board atualizado',
-        description: 'Board do Kanban foi atualizado com sucesso.',
+        title: 'Nome inválido',
+        description: 'Por favor, insira um nome para o quadro.',
+        variant: 'destructive',
       });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('kanban_boards')
+        .insert([{ name: newBoardName, description: newBoardDescription }])
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('Erro ao criar quadro:', error);
+        toast({
+          title: 'Erro ao criar quadro',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        setBoards([...boards, data]);
+        setNewBoardName('');
+        setNewBoardDescription('');
+        toast({
+          title: 'Quadro criado',
+          description: 'Quadro Kanban criado com sucesso!',
+        });
+      }
     } catch (error: any) {
+      console.error('Erro inesperado ao criar quadro:', error);
       toast({
-        title: 'Erro ao atualizar board',
+        title: 'Erro inesperado',
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    setEditingId(null);
-    setEditName('');
-    setEditDescription('');
-    setEditColor('#3b82f6');
-  };
-
-  const handleDelete = async (boardId: string) => {
+  const deleteBoard = async (boardId: string) => {
+    setIsLoading(true);
     try {
       const { error } = await supabase
         .from('kanban_boards')
         .delete()
         .eq('id', boardId);
 
-      if (error) throw error;
-
-      setBoards(prev => prev.filter(board => board.id !== boardId));
-
-      toast({
-        title: 'Board removido',
-        description: 'Board do Kanban foi removido com sucesso.',
-      });
+      if (error) {
+        console.error('Erro ao excluir quadro:', error);
+        toast({
+          title: 'Erro ao excluir quadro',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        setBoards(boards.filter(board => board.id !== boardId));
+        if (selectedBoard?.id === boardId) {
+          onBoardSelect(null as any);
+        }
+        toast({
+          title: 'Quadro excluído',
+          description: 'Quadro Kanban excluído com sucesso!',
+        });
+      }
     } catch (error: any) {
+      console.error('Erro inesperado ao excluir quadro:', error);
       toast({
-        title: 'Erro ao remover board',
+        title: 'Erro inesperado',
         description: error.message,
         variant: 'destructive',
       });
+    } finally {
+      setIsLoading(false);
     }
   };
-
-  const handleCreate = async () => {
-    if (!newBoardName.trim()) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('kanban_boards')
-        .insert([{
-          user_id: user?.id,
-          name: newBoardName.trim(),
-          description: newBoardDescription.trim() || null,
-          color: newBoardColor,
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setBoards(prev => [data as KanbanBoard, ...prev]);
-      setNewBoardName('');
-      setNewBoardDescription('');
-      setNewBoardColor('#3b82f6');
-
-      toast({
-        title: 'Board criado',
-        description: 'Novo board do Kanban foi criado com sucesso.',
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Erro ao criar board',
-        description: error.message,
-        variant: 'destructive',
-      });
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <Card className="bg-gray-900 border-gray-800">
-        <CardContent className="p-6">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   return (
     <Card className="bg-gray-900 border-gray-800">
       <CardHeader>
-        <CardTitle className="text-white">Gerenciar Boards do Kanban</CardTitle>
+        <CardTitle className="flex items-center gap-2 text-white">
+          <Settings className="h-5 w-5" />
+          Gerenciar Quadros Kanban
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Criar novo board */}
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-300">Novo Board</h4>
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Nome do board"
-                value={newBoardName}
-                onChange={(e) => setNewBoardName(e.target.value)}
-                className="flex-1 bg-gray-800 border-gray-700 text-white"
-              />
-              <Input
-                type="color"
-                value={newBoardColor}
-                onChange={(e) => setNewBoardColor(e.target.value)}
-                className="w-16 bg-gray-800 border-gray-700"
-              />
-              <Button onClick={handleCreate} size="sm">
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-            <Textarea
-              placeholder="Descrição do board (opcional)"
-              value={newBoardDescription}
-              onChange={(e) => setNewBoardDescription(e.target.value)}
-              className="bg-gray-800 border-gray-700 text-white"
-              rows={2}
-            />
-          </div>
+          <Label htmlFor="name" className="text-gray-300">Nome do Quadro</Label>
+          <Input
+            id="name"
+            placeholder="Nome"
+            value={newBoardName}
+            onChange={(e) => setNewBoardName(e.target.value)}
+            className="bg-gray-700 text-white border-gray-600 focus-visible:ring-blue-500"
+          />
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="description" className="text-gray-300">Descrição</Label>
+          <Input
+            id="description"
+            placeholder="Descrição"
+            value={newBoardDescription}
+            onChange={(e) => setNewBoardDescription(e.target.value)}
+            className="bg-gray-700 text-white border-gray-600 focus-visible:ring-blue-500"
+          />
+        </div>
+        <Button onClick={createBoard} disabled={isLoading} className="w-full bg-blue-600 hover:bg-blue-700">
+          {isLoading ? 'Criando...' : 'Criar Quadro'}
+        </Button>
 
-        {/* Lista de boards */}
-        <div className="space-y-2">
-          <h4 className="text-sm font-medium text-gray-300">Boards Existentes</h4>
-          {boards.map((board) => (
-            <div key={board.id} className="p-3 bg-gray-800 rounded-lg space-y-2">
-              {editingId === board.id ? (
-                <div className="space-y-2">
-                  <div className="flex gap-2">
-                    <Input
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="flex-1 bg-gray-700 border-gray-600 text-white"
-                    />
-                    <Input
-                      type="color"
-                      value={editColor}
-                      onChange={(e) => setEditColor(e.target.value)}
-                      className="w-16 bg-gray-700 border-gray-600"
-                    />
-                  </div>
-                  <Textarea
-                    value={editDescription}
-                    onChange={(e) => setEditDescription(e.target.value)}
-                    className="bg-gray-700 border-gray-600 text-white"
-                    rows={2}
-                  />
-                  <div className="flex gap-2">
-                    <Button onClick={handleSave} size="sm" variant="outline">
-                      <Save className="h-4 w-4" />
-                    </Button>
-                    <Button onClick={handleCancel} size="sm" variant="outline">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: board.color }}
-                    />
-                    <Folder className="h-4 w-4 text-gray-400" />
-                    <span className="flex-1 text-white font-medium">{board.name}</span>
-                    <Button
-                      onClick={() => handleEdit(board)}
-                      size="sm"
-                      variant="outline"
-                      className="border-gray-700 text-gray-300"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      onClick={() => handleDelete(board.id)}
-                      size="sm"
-                      variant="outline"
-                      className="border-gray-700 text-red-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {board.description && (
-                    <p className="text-sm text-gray-400 ml-6">{board.description}</p>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        {boards.length > 0 ? (
+          <div className="space-y-3 mt-6">
+            <h3 className="text-lg font-semibold text-white">Quadros Existentes</h3>
+            <ul className="space-y-2">
+              {boards.map(board => (
+                <li key={board.id} className="flex items-center justify-between bg-gray-800 rounded-md p-3">
+                  <button
+                    onClick={() => onBoardSelect(board)}
+                    className={`text-white hover:text-blue-500 ${selectedBoard?.id === board.id ? 'font-semibold' : ''}`}
+                  >
+                    {board.name}
+                  </button>
+                  <Button
+                    onClick={() => deleteBoard(board.id)}
+                    variant="destructive"
+                    size="icon"
+                    disabled={isLoading}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <div className="mt-6 text-center text-gray-400">
+            Nenhum quadro criado ainda.
+          </div>
+        )}
       </CardContent>
     </Card>
   );
