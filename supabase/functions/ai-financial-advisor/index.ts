@@ -15,9 +15,11 @@ serve(async (req) => {
   try {
     const { prompt, userId } = await req.json()
     
-    if (!userId) {
+    // Verificar se o usuário está autenticado via header
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'Usuário não autenticado' }),
+        JSON.stringify({ error: 'Token de autenticação não fornecido' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -27,17 +29,26 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Verificar se o usuário existe
-    const { data: user, error: userError } = await supabaseClient
-      .from('profiles')
-      .select('id')
-      .eq('id', userId)
-      .single()
-
-    if (userError || !user) {
+    // Extrair o token do header
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Verificar o usuário autenticado
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
+    
+    if (authError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Usuário não encontrado' }),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Token de autenticação inválido' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    const authenticatedUserId = user.id
+
+    // Verificar se o userId fornecido corresponde ao usuário autenticado
+    if (userId && userId !== authenticatedUserId) {
+      return new Response(
+        JSON.stringify({ error: 'Acesso negado' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -49,18 +60,18 @@ serve(async (req) => {
       )
     }
 
-    // Buscar dados financeiros do usuário
+    // Buscar dados financeiros do usuário autenticado
     const { data: transactions } = await supabaseClient
       .from('transactions')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', authenticatedUserId)
       .order('created_at', { ascending: false })
       .limit(10)
 
     const { data: budgets } = await supabaseClient
       .from('budgets')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', authenticatedUserId)
 
     // Preparar contexto financeiro
     const financialContext = {
@@ -70,13 +81,20 @@ serve(async (req) => {
     }
 
     const systemPrompt = `Você é um assistente financeiro especializado em análise de dados financeiros. 
-    Você tem acesso aos seguintes dados do usuário autenticado (ID: ${userId}):
+    Você tem acesso aos seguintes dados do usuário autenticado (ID: ${authenticatedUserId}):
     
     Transações recentes: ${JSON.stringify(financialContext.transactions)}
     Orçamentos: ${JSON.stringify(financialContext.budgets)}
     
     Forneça conselhos financeiros personalizados, análises de gastos e sugestões de economia baseadas nos dados reais do usuário.
-    Seja preciso, útil e mantenha suas respostas em português brasileiro.`
+    Seja preciso, útil e mantenha suas respostas em português brasileiro.
+    
+    Sempre estruture sua resposta de forma clara e organizada com:
+    1. Resumo da situação financeira
+    2. Análise de padrões de gastos
+    3. Alertas importantes
+    4. Sugestões práticas de melhoria
+    5. Recomendações de próximos passos`
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`,
@@ -97,7 +115,7 @@ serve(async (req) => {
           ],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 1000,
+            maxOutputTokens: 1500,
           }
         }),
       }
@@ -119,7 +137,7 @@ serve(async (req) => {
     await supabaseClient
       .from('ai_analysis')
       .insert({
-        user_id: userId,
+        user_id: authenticatedUserId,
         analysis_type: 'financial_advice',
         content: aiResponse,
         metadata: { prompt, financialContext }

@@ -10,9 +10,11 @@ import CategoryAnalysis from '@/components/CategoryAnalysis';
 import TrendChart from '@/components/TrendChart';
 import MonthlyReport from '@/components/MonthlyReport';
 import TransactionFilters from '@/components/TransactionFilters';
+import AIInsights from '@/components/AIInsights';
+import ModernChart from '@/components/ModernChart';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, PieChart, TrendingUp, Calendar, Filter } from 'lucide-react';
+import { BarChart3, PieChart, TrendingUp, Calendar, Filter, Brain, Sparkles, Activity, Zap } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
@@ -22,8 +24,8 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cyan-400"></div>
       </div>
     );
   }
@@ -40,200 +42,279 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="space-y-8 p-6">
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-          <h1 className="text-3xl font-bold mb-2">Dashboard Financeiro Inteligente</h1>
-          <p className="text-blue-100">Visão completa e interativa das suas finanças pessoais</p>
-        </div>
-        
-        {/* Interactive Filters */}
-        <TransactionFilters
-          selectedPeriod={selectedPeriod}
-          selectedCategory={selectedCategory}
-          selectedType={selectedType}
-          onPeriodChange={setSelectedPeriod}
-          onCategoryChange={setSelectedCategory}
-          onTypeChange={setSelectedType}
-          onReset={handleResetFilters}
-        />
-        
-        {/* Stats Cards */}
-        <DashboardStats />
-        
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:grid-cols-5">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Visão Geral
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <PieChart className="h-4 w-4" />
-              Análises
-            </TabsTrigger>
-            <TabsTrigger value="trends" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Tendências
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Relatórios
-            </TabsTrigger>
-            <TabsTrigger value="filters" className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Filtros Avançados
-            </TabsTrigger>
-          </TabsList>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+        <div className="space-y-8">
+          {/* Header Section */}
+          <div className="text-center mb-8">
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent mb-4">
+              Dashboard Financeiro Inteligente
+            </h1>
+            <p className="text-slate-300 text-xl max-w-3xl mx-auto">
+              Visão completa e interativa das suas finanças pessoais com IA integrada
+            </p>
+          </div>
+          
+          {/* Interactive Filters */}
+          <TransactionFilters
+            selectedPeriod={selectedPeriod}
+            selectedCategory={selectedCategory}
+            selectedType={selectedType}
+            onPeriodChange={setSelectedPeriod}
+            onCategoryChange={setSelectedCategory}
+            onTypeChange={setSelectedType}
+            onReset={handleResetFilters}
+          />
+          
+          {/* Stats Cards */}
+          <DashboardStats />
+          
+          {/* Main Content Tabs */}
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:grid-cols-6 bg-slate-800/50 border border-slate-700">
+              <TabsTrigger value="overview" className="flex items-center gap-2 text-slate-300 data-[state=active]:text-cyan-400">
+                <BarChart3 className="h-4 w-4" />
+                Visão Geral
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="flex items-center gap-2 text-slate-300 data-[state=active]:text-purple-400">
+                <Brain className="h-4 w-4" />
+                IA Insights
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-2 text-slate-300 data-[state=active]:text-pink-400">
+                <PieChart className="h-4 w-4" />
+                Análises
+              </TabsTrigger>
+              <TabsTrigger value="trends" className="flex items-center gap-2 text-slate-300 data-[state=active]:text-green-400">
+                <TrendingUp className="h-4 w-4" />
+                Tendências
+              </TabsTrigger>
+              <TabsTrigger value="reports" className="flex items-center gap-2 text-slate-300 data-[state=active]:text-orange-400">
+                <Calendar className="h-4 w-4" />
+                Relatórios
+              </TabsTrigger>
+              <TabsTrigger value="filters" className="flex items-center gap-2 text-slate-300 data-[state=active]:text-blue-400">
+                <Filter className="h-4 w-4" />
+                Filtros Avançados
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ExpenseChart />
-              <RecentTransactions />
-            </div>
-          </TabsContent>
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <ExpenseChart />
+                <RecentTransactions />
+              </div>
+            </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <CategoryAnalysis />
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <PieChart className="h-5 w-5" />
-                    Insights Financeiros IA
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-green-50 rounded-lg border border-green-200">
-                      <h4 className="font-semibold text-green-800 mb-2">💡 Dica de Economia</h4>
-                      <p className="text-green-700 text-sm">
-                        Suas despesas com alimentação representam 35% do orçamento. 
-                        Considere meal prep para economizar até R$ 400/mês.
-                      </p>
-                    </div>
-                    <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                      <h4 className="font-semibold text-blue-800 mb-2">📊 Análise Período: {selectedPeriod}</h4>
-                      <p className="text-blue-700 text-sm">
-                        Com os filtros atuais, você está gastando 12% menos que a média. 
-                        Excelente controle financeiro!
-                      </p>
-                    </div>
-                    <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                      <h4 className="font-semibold text-purple-800 mb-2">🎯 Meta Inteligente</h4>
-                      <p className="text-purple-700 text-sm">
-                        Baseado no seu padrão, você pode economizar R$ 350 este mês 
-                        reduzindo gastos em entretenimento.
-                      </p>
-                    </div>
-                    <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
-                      <h4 className="font-semibold text-orange-800 mb-2">🔮 Previsão IA</h4>
-                      <p className="text-orange-700 text-sm">
-                        Tendência: Se mantiver o padrão atual, você terminará o mês 
-                        com R$ 1.200 de sobra para investimentos.
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+            <TabsContent value="ai" className="space-y-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <AIInsights />
+                <div className="grid gap-6">
+                  <ModernChart type="pie" title="🎯 Análise de Categorias IA" timeframe="30d" />
+                  <Card className="border-purple-500/30 bg-gradient-to-br from-purple-900/30 to-slate-900/50 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-3 text-white">
+                        <Zap className="h-6 w-6 text-purple-400" />
+                        Insights Rápidos
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid gap-3">
+                        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                          <h4 className="text-green-400 font-semibold text-sm mb-1">💡 Economia Detectada</h4>
+                          <p className="text-green-300 text-xs">
+                            Você gastou 12% menos que a média mensal. Continue assim!
+                          </p>
+                        </div>
+                        <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                          <h4 className="text-yellow-400 font-semibold text-sm mb-1">⚠️ Atenção</h4>
+                          <p className="text-yellow-300 text-xs">
+                            Gastos com alimentação aumentaram 15% este mês.
+                          </p>
+                        </div>
+                        <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                          <h4 className="text-purple-400 font-semibold text-sm mb-1">🎯 Oportunidade</h4>
+                          <p className="text-purple-300 text-xs">
+                            Potencial de economia de R$ 350 em entretenimento.
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="trends" className="space-y-6">
-            <TrendChart />
-          </TabsContent>
-
-          <TabsContent value="reports" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <MonthlyReport />
-              <Card>
-                <CardHeader>
-                  <CardTitle>Relatórios Personalizados</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
-                    <h4 className="font-semibold mb-2">Filtros Ativos:</h4>
-                    <div className="space-y-1 text-sm">
-                      <p><strong>Período:</strong> {selectedPeriod === 'all' ? 'Todos os períodos' : selectedPeriod}</p>
-                      <p><strong>Categoria:</strong> {selectedCategory === 'all' ? 'Todas' : selectedCategory}</p>
-                      <p><strong>Tipo:</strong> {selectedType === 'all' ? 'Todos' : selectedType}</p>
+            <TabsContent value="analytics" className="space-y-6">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <CategoryAnalysis />
+                <ModernChart type="bar" title="📊 Comparativo Futurista" timeframe="90d" />
+              </div>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <ModernChart type="area" title="⚡ Fluxo Temporal" timeframe="30d" />
+                <Card className="border-cyan-500/30 bg-gradient-to-br from-cyan-900/30 to-slate-900/50 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3 text-white">
+                      <Activity className="h-6 w-6 text-cyan-400" />
+                      Performance Analytics
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-300">Taxa de Economia</span>
+                        <span className="text-green-400 font-bold">+12.5%</span>
+                      </div>
+                      <div className="w-full bg-slate-700 rounded-full h-2">
+                        <div className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full" style={{width: '75%'}}></div>
+                      </div>
                     </div>
-                  </div>
-                  <button className="w-full p-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    📄 Exportar PDF Filtrado
-                  </button>
-                  <button className="w-full p-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                    📊 Exportar Excel com Filtros
-                  </button>
-                  <button className="w-full p-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                    📈 Relatório Analítico IA
-                  </button>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-300">Controle Orçamentário</span>
+                        <span className="text-blue-400 font-bold">87%</span>
+                      </div>
+                      <div className="w-full bg-slate-700 rounded-full h-2">
+                        <div className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2 rounded-full" style={{width: '87%'}}></div>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-300">Meta Mensal</span>
+                        <span className="text-purple-400 font-bold">92%</span>
+                      </div>
+                      <div className="w-full bg-slate-700 rounded-full h-2">
+                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" style={{width: '92%'}}></div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
 
-          <TabsContent value="filters" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Análise por Período</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <h4 className="font-semibold mb-2">Comparativo de Períodos</h4>
+            <TabsContent value="trends" className="space-y-6">
+              <TrendChart />
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <ModernChart type="line" title="📈 Tendência de Saldo" timeframe="90d" />
+                <Card className="border-emerald-500/30 bg-gradient-to-br from-emerald-900/30 to-slate-900/50 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-white">Previsões IA</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                        <h4 className="text-blue-400 font-semibold text-sm mb-1">📊 Próximo Mês</h4>
+                        <p className="text-blue-300 text-xs">
+                          Baseado no padrão atual, você terá R$ 1.200 de sobra para investimentos.
+                        </p>
+                      </div>
+                      <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                        <h4 className="text-purple-400 font-semibold text-sm mb-1">🎯 Meta Trimestral</h4>
+                        <p className="text-purple-300 text-xs">
+                          Potencial de economia de R$ 3.500 até o final do trimestre.
+                        </p>
+                      </div>
+                      <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                        <h4 className="text-green-400 font-semibold text-sm mb-1">💰 Oportunidade de Investimento</h4>
+                        <p className="text-green-300 text-xs">
+                          Momento ideal para investir em renda fixa com taxa atual.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="reports" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <MonthlyReport />
+                <Card className="border-slate-700/50 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-white">Exportações Inteligentes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="p-3 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-lg border border-blue-500/30">
+                      <h4 className="font-semibold text-blue-300 mb-2">Filtros Ativos:</h4>
+                      <div className="space-y-1 text-sm text-slate-300">
+                        <p><strong>Período:</strong> {selectedPeriod === 'all' ? 'Todos os períodos' : selectedPeriod}</p>
+                        <p><strong>Categoria:</strong> {selectedCategory === 'all' ? 'Todas' : selectedCategory}</p>
+                        <p><strong>Tipo:</strong> {selectedType === 'all' ? 'Todos' : selectedType}</p>
+                      </div>
+                    </div>
+                    <div className="grid gap-3">
+                      <button className="w-full p-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 text-sm font-medium">
+                        📄 Relatório PDF com IA
+                      </button>
+                      <button className="w-full p-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all duration-300 text-sm font-medium">
+                        📊 Dashboard Interativo
+                      </button>
+                      <button className="w-full p-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-300 text-sm font-medium">
+                        🤖 Análise Completa IA
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="filters" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="border-slate-700/50 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-white">Análise Temporal Avançada</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="font-medium">Últimos 7 dias:</p>
-                          <p className="text-green-600">-15% gastos</p>
+                        <div className="p-3 bg-blue-900/20 rounded-lg border border-blue-500/30">
+                          <p className="font-medium text-blue-300">Últimos 7 dias:</p>
+                          <p className="text-green-400">-15% gastos</p>
                         </div>
-                        <div>
-                          <p className="font-medium">Últimos 30 dias:</p>
-                          <p className="text-blue-600">+5% receitas</p>
+                        <div className="p-3 bg-green-900/20 rounded-lg border border-green-500/30">
+                          <p className="font-medium text-green-300">Últimos 30 dias:</p>
+                          <p className="text-blue-400">+5% receitas</p>
                         </div>
-                        <div>
-                          <p className="font-medium">Últimos 90 dias:</p>
-                          <p className="text-purple-600">Meta: 87%</p>
+                        <div className="p-3 bg-purple-900/20 rounded-lg border border-purple-500/30">
+                          <p className="font-medium text-purple-300">Últimos 90 dias:</p>
+                          <p className="text-purple-400">Meta: 87%</p>
                         </div>
-                        <div>
-                          <p className="font-medium">Ano atual:</p>
-                          <p className="text-orange-600">Economia: R$ 2.4K</p>
+                        <div className="p-3 bg-orange-900/20 rounded-lg border border-orange-500/30">
+                          <p className="font-medium text-orange-300">Ano atual:</p>
+                          <p className="text-orange-400">Economia: R$ 2.4K</p>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Categorias Expandidas</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                      <h5 className="font-semibold text-blue-800">Essenciais</h5>
-                      <p className="text-sm text-blue-600">Moradia, Alimentação, Saúde, Transporte</p>
+                <Card className="border-slate-700/50 bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-white">Categorias Inteligentes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                        <h5 className="font-semibold text-blue-300 text-sm">💼 Essenciais</h5>
+                        <p className="text-xs text-blue-200">Moradia, Alimentação, Saúde, Transporte</p>
+                      </div>
+                      <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+                        <h5 className="font-semibold text-green-300 text-sm">🎯 Pessoais</h5>
+                        <p className="text-xs text-green-200">Entretenimento, Fitness, Beleza, Viagens</p>
+                      </div>
+                      <div className="p-3 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+                        <h5 className="font-semibold text-purple-300 text-sm">🚀 Profissionais</h5>
+                        <p className="text-xs text-purple-200">Equipamentos, Software, Marketing</p>
+                      </div>
+                      <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-lg">
+                        <h5 className="font-semibold text-orange-300 text-sm">💰 Investimentos</h5>
+                        <p className="text-xs text-orange-200">Dividendos, Aluguel, Poupança</p>
+                      </div>
                     </div>
-                    <div className="p-3 bg-green-50 rounded-lg">
-                      <h5 className="font-semibold text-green-800">Pessoais</h5>
-                      <p className="text-sm text-green-600">Entretenimento, Fitness, Beleza, Viagens</p>
-                    </div>
-                    <div className="p-3 bg-purple-50 rounded-lg">
-                      <h5 className="font-semibold text-purple-800">Profissionais</h5>
-                      <p className="text-sm text-purple-600">Equipamentos, Software, Marketing</p>
-                    </div>
-                    <div className="p-3 bg-orange-50 rounded-lg">
-                      <h5 className="font-semibold text-orange-800">Investimentos</h5>
-                      <p className="text-sm text-orange-600">Dividendos, Aluguel, Poupança</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-        </Tabs>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
     </Layout>
   );
