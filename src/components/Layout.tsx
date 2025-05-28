@@ -1,198 +1,104 @@
 
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { LogOut, User, Settings, DollarSign, CreditCard, BarChart3, MessageSquare, PieChart, Calendar, Users, Kanban, Menu } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+  LayoutDashboard, 
+  CreditCard, 
+  MessageSquare, 
+  PieChart, 
+  BarChart3, 
+  Settings, 
+  LogOut, 
+  Users,
+  Kanban,
+  Building2,
+  UsersIcon,
+  Truck,
+  CreditCard as PaymentIcon,
+  FileText
+} from 'lucide-react';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, signOut, isAdmin } = useAuth();
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  const navigate = useNavigate();
   const location = useLocation();
+  const { signOut } = useAuth();
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: BarChart3 },
-    { name: 'Transações', href: '/transactions', icon: DollarSign },
-    { name: 'Orçamentos', href: '/budgets', icon: PieChart },
-    { name: 'Relatórios', href: '/reports', icon: Calendar },
-    { name: 'CRM', href: '/crm', icon: Users },
-    { name: 'Kanban', href: '/kanban', icon: Kanban },
-    { name: 'WhatsApp & IA', href: '/whatsapp', icon: MessageSquare },
-    { name: 'Assinatura', href: '/payment', icon: CreditCard },
+  const isActive = (path: string) => location.pathname === path;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
+
+  const menuItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { icon: Building2, label: 'Empresas', path: '/companies' },
+    { icon: UsersIcon, label: 'Clientes', path: '/customers' },
+    { icon: Truck, label: 'Fornecedores', path: '/suppliers' },
+    { icon: CreditCard, label: 'Transações', path: '/transactions' },
+    { icon: FileText, label: 'Orçamentos', path: '/budgets' },
+    { icon: BarChart3, label: 'Relatórios', path: '/reports' },
+    { icon: MessageSquare, label: 'WhatsApp', path: '/whatsapp' },
+    { icon: Users, label: 'CRM', path: '/crm' },
+    { icon: Kanban, label: 'Kanban', path: '/kanban' },
+    { icon: PaymentIcon, label: 'Pagamento', path: '/payment' },
   ];
 
-  if (isAdmin) {
-    navigation.push(
-      { name: 'Config WhatsApp', href: '/whatsapp-admin', icon: Settings },
-      { name: 'Admin', href: '/admin', icon: Settings }
-    );
-  }
-
-  const NavigationItems = () => (
-    <>
-      {navigation.map((item) => {
-        const isActive = location.pathname === item.href;
-        const Icon = item.icon;
-        return (
-          <Link
-            key={item.name}
-            to={item.href}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-              isActive
-                ? 'bg-gradient-to-r from-primary/20 to-secondary/20 text-primary shadow-sm border border-primary/20'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-            }`}
-          >
-            <Icon className="h-5 w-5" />
-            <span className="truncate">{item.name}</span>
-          </Link>
-        );
-      })}
-    </>
-  );
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      {/* Desktop Navigation */}
-      <nav className="hidden lg:block fixed left-0 top-0 h-full w-64 bg-card/95 backdrop-blur-md shadow-xl border-r border-border/50 z-40">
-        <div className="p-6">
-          <Link to="/dashboard" className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
-              <span className="text-xl">💰</span>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              FinançaIA
-            </span>
-          </Link>
-          
-          <div className="space-y-2">
-            <NavigationItems />
-          </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex">
+      {/* Sidebar */}
+      <div className="w-64 bg-slate-800/50 backdrop-blur-sm border-r border-slate-700/50 p-6">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">
+            FinanceIA
+          </h1>
+          <p className="text-slate-400 text-sm">Sistema de Gestão Financeira</p>
         </div>
-      </nav>
 
-      {/* Mobile Header */}
-      <header className="lg:hidden sticky top-0 z-50 bg-card/95 backdrop-blur-md shadow-sm border-b border-border/50">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="lg:hidden">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-80 p-0">
-                <div className="p-6">
-                  <Link to="/dashboard" className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
-                      <span className="text-xl">💰</span>
-                    </div>
-                    <span className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                      FinançaIA
-                    </span>
-                  </Link>
-                  
-                  <div className="space-y-2">
-                    <NavigationItems />
-                  </div>
-                </div>
-              </SheetContent>
-            </Sheet>
-            
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <span className="text-xl">💰</span>
-              <span className="font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                FinançaIA
-              </span>
-            </Link>
-          </div>
+        <nav className="space-y-2">
+          {menuItems.map((item) => (
+            <Button
+              key={item.path}
+              variant={isActive(item.path) ? "default" : "ghost"}
+              className={`w-full justify-start ${
+                isActive(item.path) 
+                  ? "bg-gradient-to-r from-cyan-600 to-purple-600 text-white" 
+                  : "text-slate-300 hover:text-white hover:bg-slate-700/50"
+              }`}
+              onClick={() => navigate(item.path)}
+            >
+              <item.icon className="h-5 w-5 mr-3" />
+              {item.label}
+            </Button>
+          ))}
+        </nav>
 
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-gradient-to-r from-primary to-secondary text-primary-foreground">
-                      {user?.email?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuItem>
-                  <User className="mr-2 h-4 w-4" />
-                  <span>{user?.email}</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/settings" className="flex items-center">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Configurações</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => signOut()}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sair</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+        <div className="mt-auto pt-8">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-slate-300 hover:text-white hover:bg-slate-700/50"
+            onClick={() => navigate('/settings')}
+          >
+            <Settings className="h-5 w-5 mr-3" />
+            Configurações
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-900/20 mt-2"
+            onClick={handleSignOut}
+          >
+            <LogOut className="h-5 w-5 mr-3" />
+            Sair
+          </Button>
         </div>
-      </header>
-
-      {/* Desktop Header */}
-      <header className="hidden lg:block fixed top-0 left-64 right-0 z-40 bg-card/95 backdrop-blur-md shadow-sm border-b border-border/50">
-        <div className="flex items-center justify-end px-6 py-3 gap-4">
-          <ThemeToggle />
-          
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-gradient-to-r from-primary to-secondary text-primary-foreground">
-                    {user?.email?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>{user?.email}</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link to="/settings" className="flex items-center">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Configurações</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => signOut()}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sair</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </header>
+      </div>
 
       {/* Main Content */}
-      <main className="lg:ml-64 lg:pt-16 min-h-screen">
-        <div className="container mx-auto p-4 lg:p-6 max-w-7xl">
-          {children}
-        </div>
-      </main>
+      <div className="flex-1 overflow-auto">
+        {children}
+      </div>
     </div>
   );
 };
