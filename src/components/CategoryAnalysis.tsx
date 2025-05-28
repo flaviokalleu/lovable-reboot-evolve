@@ -69,7 +69,7 @@ const CategoryAnalysis = () => {
       const lastMonthTotals = calculateCategoryTotals(lastMonthTransactions);
 
       // Calcular total geral deste mês
-      const totalThisMonth = Object.values(thisMonthTotals).reduce((sum, amount) => sum + amount, 0);
+      const totalThisMonth = Object.values(thisMonthTotals).reduce((sum: number, amount: number) => sum + amount, 0);
 
       // Criar análise por categoria
       const categoryAnalysis = Object.keys({...thisMonthTotals, ...lastMonthTotals}).map(category => {

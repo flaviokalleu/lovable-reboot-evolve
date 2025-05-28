@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
@@ -16,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, PieChart, TrendingUp, Calendar, Filter, Brain, Activity, Target } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import TemporalAnalysis from '@/components/TemporalAnalysis';
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
@@ -241,32 +241,7 @@ const Dashboard = () => {
 
             <TabsContent value="filters" className="space-y-6">
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                <Card className="border-slate-700 bg-slate-800">
-                  <CardHeader className="border-b border-slate-700">
-                    <CardTitle className="text-slate-100">Análise Temporal</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="p-4 bg-slate-700 rounded-lg border border-slate-600">
-                        <p className="font-medium text-blue-300 text-sm">Últimos 7 dias:</p>
-                        <p className="text-green-400 font-bold">-15% gastos</p>
-                      </div>
-                      <div className="p-4 bg-slate-700 rounded-lg border border-slate-600">
-                        <p className="font-medium text-green-300 text-sm">Últimos 30 dias:</p>
-                        <p className="text-blue-400 font-bold">+5% receitas</p>
-                      </div>
-                      <div className="p-4 bg-slate-700 rounded-lg border border-slate-600">
-                        <p className="font-medium text-purple-300 text-sm">Últimos 90 dias:</p>
-                        <p className="text-purple-400 font-bold">Meta: 87%</p>
-                      </div>
-                      <div className="p-4 bg-slate-700 rounded-lg border border-slate-600">
-                        <p className="font-medium text-orange-300 text-sm">Ano atual:</p>
-                        <p className="text-orange-400 font-bold">Economia: R$ 2.4K</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
+                <TemporalAnalysis />
                 <Card className="border-slate-700 bg-slate-800">
                   <CardHeader className="border-b border-slate-700">
                     <CardTitle className="text-slate-100">Categorias Empresariais</CardTitle>
